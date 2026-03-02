@@ -1,0 +1,72 @@
+{
+  "history_limit": 20,
+  "default_model_id": "flux-klein-9b",
+  "deepseek": {
+    "model": "deepseek-chat"
+  },
+  "ratios": {
+    "1:1": {
+      "label": "1:1",
+      "width": 1024,
+      "height": 1024
+    },
+    "9:16": {
+      "label": "9:16",
+      "width": 896,
+      "height": 1600
+    },
+    "16:9": {
+      "label": "16:9",
+      "width": 1600,
+      "height": 896
+    },
+    "3:4": {
+      "label": "3:4",
+      "width": 960,
+      "height": 1280
+    },
+    "4:3": {
+      "label": "4:3",
+      "width": 1280,
+      "height": 960
+    }
+  },
+  "models": [
+    {
+      "id": "flux-klein-9b",
+      "name": "Flux Klein",
+      "provider": "Black Forest Labs",
+      "endpoint": "https://api.bfl.ai/v1/flux-2-klein-9b",
+      "notes": "默认主推，当前接 9B 版本，速度和质量平衡。",
+      "supports_lora": false,
+      "supports_negative_prompt": false
+    },
+    {
+      "id": "flux-klein-4b",
+      "name": "Flux Klein 4B",
+      "provider": "Black Forest Labs",
+      "endpoint": "https://api.bfl.ai/v1/flux-2-klein-4b",
+      "notes": "最快，适合高频探索。",
+      "supports_lora": false,
+      "supports_negative_prompt": false
+    },
+    {
+      "id": "flux-2-pro",
+      "name": "Flux 2 Pro",
+      "provider": "Black Forest Labs",
+      "endpoint": "https://api.bfl.ai/v1/flux-2-pro",
+      "notes": "更强的细节与一致性。",
+      "supports_lora": false,
+      "supports_negative_prompt": false
+    },
+    {
+      "id": "flux-2-flex",
+      "name": "Flux 2 Flex",
+      "provider": "Black Forest Labs",
+      "endpoint": "https://api.bfl.ai/v1/flux-2-flex",
+      "notes": "适合可控生成。",
+      "supports_lora": false,
+      "supports_negative_prompt": false
+    }
+  ]
+}

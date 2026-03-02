@@ -1,0 +1,11 @@
+{
+  "deepseek": {
+    "base_url": "https://api.deepseek.com",
+    "endpoint": "/chat/completions",
+    "model": "deepseek-chat",
+    "api_key": "replace-with-your-deepseek-key"
+  },
+  "bfl": {
+    "api_key": "replace-with-your-bfl-key"
+  }
+}
