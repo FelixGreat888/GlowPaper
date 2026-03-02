@@ -43,44 +43,7 @@ const LORA_INSIGHTS = [
 function BrandLogo() {
   return (
     <span className="brand-mark" aria-hidden="true">
-      <svg viewBox="0 0 72 72" fill="none">
-        <defs>
-          <linearGradient id="brand-frame" x1="14" y1="10" x2="58" y2="60" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#6AF5FF" />
-            <stop offset="1" stopColor="#FF7CEB" />
-          </linearGradient>
-          <linearGradient id="brand-ribbon" x1="24" y1="8" x2="44" y2="62" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#7EF9FF" />
-            <stop offset="0.5" stopColor="#E783FF" />
-            <stop offset="1" stopColor="#6DD7FF" />
-          </linearGradient>
-          <filter id="brand-glow" x="0" y="0" width="72" height="72" filterUnits="userSpaceOnUse">
-            <feGaussianBlur stdDeviation="5.5" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        <rect x="12" y="8" width="48" height="56" rx="14" stroke="url(#brand-frame)" strokeWidth="3.2" />
-        <g filter="url(#brand-glow)">
-          <path
-            d="M42 10C48 17 46 23 38 30C31 36 31 41 38 47C44 53 43 58 31 63"
-            stroke="url(#brand-ribbon)"
-            strokeWidth="6.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M29 10C22 18 23 25 31 31C38 36 39 41 31 48C25 53 25 58 35 63"
-            stroke="url(#brand-ribbon)"
-            strokeOpacity="0.75"
-            strokeWidth="4.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </g>
-      </svg>
+      <img src="/logo.png" alt="" />
     </span>
   );
 }
@@ -184,7 +147,16 @@ function getOptimizedPromptList(params) {
   return singlePrompt ? [singlePrompt] : [];
 }
 
-function ResultImageCard({ batch, image, onPreview }) {
+function getImagePrompt(batch, image) {
+  return (
+    image.prompt ||
+    getFinalPromptList(batch.params)[image.index] ||
+    getFinalPrompt(batch.params) ||
+    getOriginalPrompt(batch.params)
+  );
+}
+
+function ResultImageCard({ batch, image, onPreview, onPrompt }) {
   return (
     <div className="result-card">
       {image.url || image.dataUrl ? (
@@ -198,9 +170,16 @@ function ResultImageCard({ batch, image, onPreview }) {
               <button
                 type="button"
                 className="icon-button"
-                onClick={() => onPreview(image.dataUrl || image.url)}
+                onClick={onPreview}
               >
                 放大
+              </button>
+              <button
+                type="button"
+                className="icon-button"
+                onClick={onPrompt}
+              >
+                提示词
               </button>
               <button
                 type="button"
@@ -238,7 +217,8 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
   const [prompt, setPrompt] = useState('');
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [previewImage, setPreviewImage] = useState(null);
+  const [previewIndex, setPreviewIndex] = useState(null);
+  const [promptDialog, setPromptDialog] = useState(null);
   const [message, setMessage] = useState('');
   const [workingBatch, setWorkingBatch] = useState(null);
   const [showCompactSettings, setShowCompactSettings] = useState(false);
@@ -250,6 +230,74 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
     ? [workingBatch, ...history.filter((item) => item.id !== workingBatch.id)]
     : history;
   const isErrorMessage = /(失败|错误|超时|未|error|fetch)/i.test(message);
+  const previewItems = [];
+  const previewIndexMap = new Map();
+
+  batches.forEach((batch) => {
+    batch.images.forEach((image) => {
+      if (!image.url && !image.dataUrl) {
+        return;
+      }
+
+      const key = `${batch.id}-${image.index}`;
+      previewIndexMap.set(key, previewItems.length);
+      previewItems.push({
+        key,
+        batch,
+        image,
+      });
+    });
+  });
+
+  const activePreview =
+    previewIndex !== null && previewIndex >= 0 && previewIndex < previewItems.length
+      ? previewItems[previewIndex]
+      : null;
+
+  function closePreview() {
+    setPreviewIndex(null);
+  }
+
+  function stepPreview(direction) {
+    setPreviewIndex((current) => {
+      if (current === null || !previewItems.length) {
+        return current;
+      }
+
+      const nextIndex = current + direction;
+      if (nextIndex < 0 || nextIndex >= previewItems.length) {
+        return current;
+      }
+
+      return nextIndex;
+    });
+  }
+
+  useEffect(() => {
+    if (!activePreview) {
+      return undefined;
+    }
+
+    function handlePreviewKey(event) {
+      if (event.key === 'Escape') {
+        closePreview();
+        return;
+      }
+
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        stepPreview(-1);
+      }
+
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+        event.preventDefault();
+        stepPreview(1);
+      }
+    }
+
+    window.addEventListener('keydown', handlePreviewKey);
+    return () => window.removeEventListener('keydown', handlePreviewKey);
+  }, [activePreview, previewItems.length]);
 
   async function handleGenerate() {
     if (!prompt.trim()) {
@@ -535,9 +583,12 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
                   <SparkIcon />
                   {isGenerating ? '生成中...' : '开始生成'}
                 </button>
-                {message && (
-                  <p className={`notice-bar action-notice ${isErrorMessage ? 'is-error' : ''}`}>{message}</p>
-                )}
+                <p
+                  className={`action-notice ${message ? 'is-visible' : 'is-empty'} ${isErrorMessage ? 'is-error' : ''}`}
+                  aria-live="polite"
+                >
+                  {message || ' '}
+                </p>
               </div>
             </div>
           </div>
@@ -614,36 +665,11 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
                     <span className="meta-chip">{formatRelativeTime(batch.createdAt)}</span>
                   </div>
 
-                  <div className="prompt-panel">
-                    <div className="prompt-block compact-prompt-block">
-                      <span>原始提示词</span>
-                      <p className="clamped-prompt">{getOriginalPrompt(batch.params)}</p>
+                  {batch.status === 'error' && (
+                    <div className="batch-error-row">
+                      <p className="notice-bar is-error">生成失败：{batch.error}</p>
                     </div>
-                    {getOptimizedPromptList(batch.params).length > 0 && (
-                      <div className="prompt-block compact-prompt-block prompt-block-emphasis">
-                        <span>
-                          优化后提示词
-                          {getOptimizedPromptList(batch.params).length > 1
-                            ? `（${getOptimizedPromptList(batch.params).length} 条）`
-                            : ''}
-                        </span>
-                        <div className="prompt-variant-list">
-                          {getOptimizedPromptList(batch.params).map((item, promptIndex) => (
-                            <div key={`${batch.id}-prompt-${promptIndex}`} className="prompt-variant-item">
-                              <strong>第 {promptIndex + 1} 张</strong>
-                              <p className="clamped-prompt">{item}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {batch.status === 'error' && (
-                      <div className="prompt-block error-copy">
-                        <span>错误信息</span>
-                        <p>{batch.error}</p>
-                      </div>
-                    )}
-                  </div>
+                  )}
 
                   <div className="batch-row-scroll">
                     <div className="result-grid timeline-result-grid">
@@ -652,7 +678,14 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
                           key={`${batch.id}-${image.index}`}
                           batch={batch}
                           image={image}
-                          onPreview={setPreviewImage}
+                          onPreview={() => setPreviewIndex(previewIndexMap.get(`${batch.id}-${image.index}`))}
+                          onPrompt={() =>
+                            setPromptDialog({
+                              title: `第 ${image.index + 1} 张提示词`,
+                              originalPrompt: getOriginalPrompt(batch.params),
+                              imagePrompt: getImagePrompt(batch, image),
+                            })
+                          }
                         />
                       ))}
                     </div>
@@ -664,17 +697,81 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
         </div>
       </section>
 
-      {previewImage && (
-        <div className="modal-backdrop" onClick={() => setPreviewImage(null)}>
+      {activePreview && (
+        <div className="modal-backdrop" onClick={closePreview}>
           <div className="modal-card" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-toolbar">
+              <span className="modal-counter">
+                {previewIndex + 1} / {previewItems.length}
+              </span>
+              <div className="modal-toolbar-actions">
+                <button
+                  type="button"
+                  className="modal-nav"
+                  onClick={() => stepPreview(-1)}
+                  disabled={previewIndex === 0}
+                >
+                  上一张
+                </button>
+                <button
+                  type="button"
+                  className="modal-nav"
+                  onClick={() => stepPreview(1)}
+                  disabled={previewIndex === previewItems.length - 1}
+                >
+                  下一张
+                </button>
+              </div>
+            </div>
             <button
               type="button"
               className="modal-close"
-              onClick={() => setPreviewImage(null)}
+              onClick={closePreview}
             >
               关闭
             </button>
-            <img src={previewImage} alt="预览图" />
+            <button
+              type="button"
+              className="modal-side-nav modal-side-nav-left"
+              onClick={() => stepPreview(-1)}
+              disabled={previewIndex === 0}
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              className="modal-side-nav modal-side-nav-right"
+              onClick={() => stepPreview(1)}
+              disabled={previewIndex === previewItems.length - 1}
+            >
+              ›
+            </button>
+            <img src={activePreview.image.dataUrl || activePreview.image.url} alt="预览图" />
+          </div>
+        </div>
+      )}
+
+      {promptDialog && (
+        <div className="modal-backdrop" onClick={() => setPromptDialog(null)}>
+          <div className="modal-card prompt-modal-card" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className="modal-close"
+              onClick={() => setPromptDialog(null)}
+            >
+              关闭
+            </button>
+            <div className="prompt-modal-body">
+              <h3>{promptDialog.title}</h3>
+              <div className="prompt-block">
+                <span>原始提示词</span>
+                <p>{promptDialog.originalPrompt}</p>
+              </div>
+              <div className="prompt-block prompt-block-emphasis">
+                <span>实际生成提示词</span>
+                <p>{promptDialog.imagePrompt}</p>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -147,20 +147,20 @@ h3,
 }
 
 .brand-mark {
-  width: 50px;
-  height: 50px;
-  border-radius: 15px;
-  color: #d6faff;
-  background:
-    radial-gradient(circle at 26% 26%, rgba(106, 245, 255, 0.26), transparent 40%),
-    radial-gradient(circle at 74% 72%, rgba(255, 124, 235, 0.24), transparent 42%),
-    linear-gradient(180deg, rgba(18, 28, 46, 0.88), rgba(8, 13, 24, 0.96));
-  box-shadow:
-    inset 0 0 0 1px rgba(120, 146, 255, 0.14),
-    0 10px 24px rgba(7, 16, 37, 0.28);
+  width: 52px;
+  height: 52px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: rgba(12, 20, 33, 0.78);
+  box-shadow: 0 8px 20px rgba(7, 16, 37, 0.2);
 }
 
-.brand-mark svg,
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .spark-icon svg {
   width: 44px;
   height: 44px;
@@ -678,8 +678,10 @@ h3,
 .generate-action-stack {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
+  align-items: flex-start;
+  flex: 0 0 auto;
+  min-width: 172px;
+  gap: 6px;
 }
 
 .prompt-optimization-toggle {
@@ -913,14 +915,26 @@ h3,
 }
 
 .action-notice {
+  width: 100%;
+  min-height: 18px;
   margin: 0;
-  align-self: flex-start;
-  max-width: 320px;
-  padding: 5px 10px;
+  padding: 0 2px;
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
-  border-color: rgba(109, 140, 255, 0.16);
-  background: rgba(17, 27, 44, 0.52);
+  letter-spacing: 0.01em;
+}
+
+.action-notice.is-empty {
+  visibility: hidden;
+}
+
+.action-notice.is-visible {
+  visibility: visible;
+}
+
+.action-notice.is-error {
+  color: var(--danger);
 }
 
 .notice-bar.is-error {
@@ -1181,6 +1195,7 @@ h3,
 
 .image-toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: auto;
 }
@@ -1193,6 +1208,10 @@ h3,
 .proxy-badge {
   align-self: flex-start;
   background: rgba(23, 36, 72, 0.86);
+}
+
+.batch-error-row {
+  margin-top: 14px;
 }
 
 .result-placeholder,
@@ -1338,22 +1357,113 @@ h3,
   background: #050a14;
 }
 
+.modal-toolbar {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 84px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modal-counter {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(109, 140, 255, 0.22);
+  background: rgba(4, 9, 20, 0.68);
+  color: var(--muted-strong);
+  font-size: 12.5px;
+}
+
+.modal-toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .modal-card img {
   width: 100%;
   max-height: 90vh;
   object-fit: contain;
 }
 
+.modal-close,
+.modal-nav,
+.modal-side-nav {
+  border: 0;
+  color: #fff;
+}
+
+.modal-close,
+.modal-nav {
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 8px 12px;
+}
+
 .modal-close {
   position: absolute;
   top: 12px;
   right: 12px;
-  z-index: 1;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
-  padding: 8px 12px;
+  z-index: 3;
+}
+
+.modal-nav {
+  position: static;
+}
+
+.modal-side-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.44);
+  transform: translateY(-50%);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.modal-side-nav:disabled,
+.modal-nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.modal-side-nav-left {
+  left: 16px;
+}
+
+.modal-side-nav-right {
+  right: 16px;
+}
+
+.prompt-modal-card {
+  width: min(760px, 94vw);
+  max-height: min(80vh, 760px);
+  overflow: auto;
+  padding: 60px 18px 18px;
+}
+
+.prompt-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.prompt-modal-body h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.prompt-modal-body .prompt-block p {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .studio-page {
@@ -1719,6 +1829,24 @@ th {
 
   .prompt-optimization-toggle {
     justify-content: space-between;
+  }
+
+  .generate-action-stack {
+    width: 100%;
+  }
+
+  .action-notice {
+    max-width: none;
+  }
+
+  .modal-toolbar {
+    right: 72px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .modal-toolbar-actions {
+    width: 100%;
   }
 
   .compact-settings-menu {
