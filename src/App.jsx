@@ -43,39 +43,39 @@ const LORA_INSIGHTS = [
 function BrandLogo() {
   return (
     <span className="brand-mark" aria-hidden="true">
-      <svg viewBox="0 0 64 64" fill="none">
+      <svg viewBox="0 0 72 72" fill="none">
         <defs>
-          <linearGradient id="brand-frame" x1="12" y1="10" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+          <linearGradient id="brand-frame" x1="14" y1="10" x2="58" y2="60" gradientUnits="userSpaceOnUse">
             <stop stopColor="#6AF5FF" />
             <stop offset="1" stopColor="#FF7CEB" />
           </linearGradient>
-          <linearGradient id="brand-ribbon" x1="25" y1="8" x2="39" y2="56" gradientUnits="userSpaceOnUse">
+          <linearGradient id="brand-ribbon" x1="24" y1="8" x2="44" y2="62" gradientUnits="userSpaceOnUse">
             <stop stopColor="#7EF9FF" />
             <stop offset="0.5" stopColor="#E783FF" />
             <stop offset="1" stopColor="#6DD7FF" />
           </linearGradient>
-          <filter id="brand-glow" x="0" y="0" width="64" height="64" filterUnits="userSpaceOnUse">
-            <feGaussianBlur stdDeviation="4.5" result="blur" />
+          <filter id="brand-glow" x="0" y="0" width="72" height="72" filterUnits="userSpaceOnUse">
+            <feGaussianBlur stdDeviation="5.5" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
         </defs>
-        <rect x="12" y="10" width="40" height="44" rx="11" stroke="url(#brand-frame)" strokeWidth="2.5" />
+        <rect x="12" y="8" width="48" height="56" rx="14" stroke="url(#brand-frame)" strokeWidth="3.2" />
         <g filter="url(#brand-glow)">
           <path
-            d="M35 10C40 15 39 21 33 27C28 32 27 36 33 41C38 45 38 50 29 54"
+            d="M42 10C48 17 46 23 38 30C31 36 31 41 38 47C44 53 43 58 31 63"
             stroke="url(#brand-ribbon)"
-            strokeWidth="5"
+            strokeWidth="6.4"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
           <path
-            d="M28 12C22 18 23 23 30 28C36 32 37 37 30 43C25 47 25 50 31 54"
+            d="M29 10C22 18 23 25 31 31C38 36 39 41 31 48C25 53 25 58 35 63"
             stroke="url(#brand-ribbon)"
             strokeOpacity="0.75"
-            strokeWidth="3"
+            strokeWidth="4.2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -420,7 +420,7 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
             onChange={(event) => {
               setPrompt(event.target.value);
             }}
-            placeholder="例如：黑底、赛博霓虹、机械烟雾、蛇形符号、发光线稿、干净边缘、适合电子烟贴纸和平铺壁纸..."
+            placeholder="例如：烟花，小马，伦敦桥，江边，摩天轮"
           />
 
           <div className="composer-toolbar">
@@ -525,22 +525,23 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
                   </div>
                 )}
               </div>
-              <button
-                type="button"
-                className="primary-button primary-generate"
-                disabled={isGenerating}
-                onClick={handleGenerate}
-              >
-                <SparkIcon />
-                {isGenerating ? '生成中...' : '开始生成'}
-              </button>
+              <div className="generate-action-stack">
+                <button
+                  type="button"
+                  className="primary-button primary-generate"
+                  disabled={isGenerating}
+                  onClick={handleGenerate}
+                >
+                  <SparkIcon />
+                  {isGenerating ? '生成中...' : '开始生成'}
+                </button>
+                {message && (
+                  <p className={`notice-bar action-notice ${isErrorMessage ? 'is-error' : ''}`}>{message}</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
-
-        {message && (
-          <p className={`notice-bar ${isErrorMessage ? 'is-error' : ''}`}>{message}</p>
-        )}
 
         <div className="history-waterfall-section">
           <div className="results-toolbar">
@@ -961,7 +962,7 @@ export default function App() {
         <div className="brand-block">
           <BrandLogo />
           <div>
-            <strong>Flux Klein</strong>
+            <strong>GlowPaper</strong>
             <span>AI电子烟壁纸灵感生成</span>
           </div>
         </div>
