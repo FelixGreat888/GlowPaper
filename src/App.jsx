@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { generateOneImage, optimizePrompt } from './lib/api.js';
 import { downloadBatchZip, downloadSingleImage } from './lib/download.js';
 import { loadHistory, saveHistory } from './lib/storage.js';
@@ -223,6 +223,7 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
   const [workingBatch, setWorkingBatch] = useState(null);
   const [showCompactSettings, setShowCompactSettings] = useState(false);
   const [promptOptimizationEnabled, setPromptOptimizationEnabled] = useState(true);
+  const compactSettingsRef = useRef(null);
 
   const model = models.find((item) => item.id === selectedModelId) || models[0];
   const resolution = config.ratios[ratio];
@@ -298,6 +299,31 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
     window.addEventListener('keydown', handlePreviewKey);
     return () => window.removeEventListener('keydown', handlePreviewKey);
   }, [activePreview, previewItems.length]);
+
+  useEffect(() => {
+    if (!showCompactSettings) {
+      return undefined;
+    }
+
+    function handlePointerDown(event) {
+      if (!compactSettingsRef.current?.contains(event.target)) {
+        setShowCompactSettings(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === 'Escape') {
+        setShowCompactSettings(false);
+      }
+    }
+
+    window.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener('keydown', handleEscape);
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown);
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [showCompactSettings]);
 
   async function runGeneration({
     promptValue,
@@ -481,7 +507,7 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
           <div className="composer-header">
             <div>
               <p className="eyebrow">提示词输入</p>
-              <h2>描述你想要生成的贴纸 / 壁纸风格</h2>
+              <h2>描述你想要生成的贴纸 / 壁纸关键词</h2>
             </div>
             <span className="counter-pill">{prompt.length}/800</span>
           </div>
@@ -515,7 +541,10 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
             </div>
 
             <div className="composer-actions">
-              <div className={`toolbar-summary ${showCompactSettings ? 'open' : ''}`}>
+              <div
+                ref={compactSettingsRef}
+                className={`toolbar-summary ${showCompactSettings ? 'open' : ''}`}
+              >
                 <button
                   type="button"
                   className="compact-settings-trigger"
@@ -536,64 +565,70 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
                 </span>
 
                 {showCompactSettings && (
-                  <div className="compact-settings-menu">
-                    <div className="compact-settings-grid">
-                      <label className="compact-field">
-                        <span>模型</span>
-                        <select
-                          value={selectedModelId}
-                          onChange={(event) => setSelectedModelId(event.target.value)}
-                        >
-                          {models.map((item) => (
-                            <option key={item.id} value={item.id}>
-                              {item.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                  <>
+                    <div
+                      className="compact-settings-backdrop"
+                      onClick={() => setShowCompactSettings(false)}
+                    />
+                    <div className="compact-settings-menu">
+                      <div className="compact-settings-grid">
+                        <label className="compact-field">
+                          <span>模型</span>
+                          <select
+                            value={selectedModelId}
+                            onChange={(event) => setSelectedModelId(event.target.value)}
+                          >
+                            {models.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
 
-                      <label className="compact-field">
-                        <span>输出比例</span>
-                        <select value={ratio} onChange={(event) => setRatio(event.target.value)}>
-                          {ratioEntries.map((item) => (
-                            <option key={item.label} value={item.label}>
-                              {RATIO_META[item.label]?.title || item.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                        <label className="compact-field">
+                          <span>输出比例</span>
+                          <select value={ratio} onChange={(event) => setRatio(event.target.value)}>
+                            {ratioEntries.map((item) => (
+                              <option key={item.label} value={item.label}>
+                                {RATIO_META[item.label]?.title || item.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
 
-                      <div className="compact-field compact-field-wide">
-                        <span>生成张数</span>
-                        <div className="count-grid compact-count-grid">
-                          {IMAGE_COUNTS.map((value) => (
-                            <button
-                              key={value}
-                              type="button"
-                              className={`count-pill ${value === imageCount ? 'active' : ''}`}
-                              onClick={() => setImageCount(value)}
-                            >
-                              {value}
-                            </button>
-                          ))}
+                        <div className="compact-field compact-field-wide">
+                          <span>生成张数</span>
+                          <div className="count-grid compact-count-grid">
+                            {IMAGE_COUNTS.map((value) => (
+                              <button
+                                key={value}
+                                type="button"
+                                className={`count-pill ${value === imageCount ? 'active' : ''}`}
+                                onClick={() => setImageCount(value)}
+                              >
+                                {value}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="compact-lora-row">
-                        <div>
-                          <strong>LoRA 预埋</strong>
-                          <span>V2 开放，当前仅保留入口。</span>
+                        <div className="compact-lora-row">
+                          <div>
+                            <strong>LoRA 预埋</strong>
+                            <span>V2 开放，当前仅保留入口。</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="ghost-button compact-link-button"
+                            onClick={() => setActiveTab('train')}
+                          >
+                            查看训练页
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          className="ghost-button compact-link-button"
-                          onClick={() => setActiveTab('train')}
-                        >
-                          查看训练页
-                        </button>
                       </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
               <div className="generate-action-stack">
