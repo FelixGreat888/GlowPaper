@@ -43,18 +43,43 @@ const LORA_INSIGHTS = [
 function BrandLogo() {
   return (
     <span className="brand-mark" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path
-          d="M12 2.75 4.5 7v10L12 21.25 19.5 17V7L12 2.75Z"
-          stroke="currentColor"
-          strokeWidth="1.6"
-        />
-        <path
-          d="M12 7.4 8.8 9.2v4.2L12 15.2l3.2-1.8V9.2L12 7.4Z"
-          stroke="currentColor"
-          strokeWidth="1.6"
-        />
-        <path d="M12 2.75V7.4" stroke="currentColor" strokeWidth="1.6" />
+      <svg viewBox="0 0 64 64" fill="none">
+        <defs>
+          <linearGradient id="brand-frame" x1="12" y1="10" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#6AF5FF" />
+            <stop offset="1" stopColor="#FF7CEB" />
+          </linearGradient>
+          <linearGradient id="brand-ribbon" x1="25" y1="8" x2="39" y2="56" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#7EF9FF" />
+            <stop offset="0.5" stopColor="#E783FF" />
+            <stop offset="1" stopColor="#6DD7FF" />
+          </linearGradient>
+          <filter id="brand-glow" x="0" y="0" width="64" height="64" filterUnits="userSpaceOnUse">
+            <feGaussianBlur stdDeviation="4.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <rect x="12" y="10" width="40" height="44" rx="11" stroke="url(#brand-frame)" strokeWidth="2.5" />
+        <g filter="url(#brand-glow)">
+          <path
+            d="M35 10C40 15 39 21 33 27C28 32 27 36 33 41C38 45 38 50 29 54"
+            stroke="url(#brand-ribbon)"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M28 12C22 18 23 23 30 28C36 32 37 37 30 43C25 47 25 50 31 54"
+            stroke="url(#brand-ribbon)"
+            strokeOpacity="0.75"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
       </svg>
     </span>
   );
@@ -209,7 +234,7 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
   const ratioEntries = Object.values(config.ratios);
   const [selectedModelId, setSelectedModelId] = useState(config.default_model_id);
   const [imageCount, setImageCount] = useState(4);
-  const [ratio, setRatio] = useState('1:1');
+  const [ratio, setRatio] = useState('3:4');
   const [prompt, setPrompt] = useState('');
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -402,7 +427,7 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
             <div className="prompt-optimization-toggle">
               <div className="toggle-copy">
                 <strong>提示词优化</strong>
-                <span>默认开启，生成时自动调用 DeepSeek 优化后再出图</span>
+                <span>建议开启</span>
               </div>
               <button
                 type="button"
@@ -937,7 +962,7 @@ export default function App() {
           <BrandLogo />
           <div>
             <strong>Flux Klein</strong>
-            <span>电子烟壁纸与贴纸生成台</span>
+            <span>AI电子烟壁纸灵感生成</span>
           </div>
         </div>
 
