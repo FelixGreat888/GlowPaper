@@ -676,12 +676,12 @@ h3,
 }
 
 .generate-action-stack {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   flex: 0 0 auto;
   min-width: 172px;
-  gap: 6px;
 }
 
 .prompt-optimization-toggle {
@@ -921,22 +921,27 @@ h3,
 }
 
 .action-notice {
-  width: 100%;
-  min-height: 18px;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: max-content;
+  max-width: 240px;
+  min-height: 0;
   margin: 0;
   padding: 0 2px;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
   letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 .action-notice.is-empty {
-  visibility: hidden;
+  display: none;
 }
 
 .action-notice.is-visible {
-  visibility: visible;
+  display: block;
 }
 
 .action-notice.is-error {
