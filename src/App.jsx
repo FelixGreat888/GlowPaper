@@ -299,32 +299,41 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
     return () => window.removeEventListener('keydown', handlePreviewKey);
   }, [activePreview, previewItems.length]);
 
-  async function handleGenerate() {
-    if (!prompt.trim()) {
+  async function runGeneration({
+    promptValue,
+    modelId,
+    count,
+    ratioValue,
+    optimizationEnabled,
+  }) {
+    if (!promptValue.trim()) {
       setMessage('请输入提示词后再生成。');
       return;
     }
 
-    const originalPrompt = prompt.trim();
-    let finalPrompts = Array.from({ length: imageCount }, () => originalPrompt);
+    const targetModel = models.find((item) => item.id === modelId) || models[0];
+    const targetRatio = config.ratios[ratioValue] ? ratioValue : '3:4';
+    const targetResolution = config.ratios[targetRatio];
+    const originalPrompt = promptValue.trim();
+    let finalPrompts = Array.from({ length: count }, () => originalPrompt);
     let optimizedPrompts = [];
 
     setIsGenerating(true);
     setMessage('');
 
-    if (promptOptimizationEnabled) {
+    if (optimizationEnabled) {
       setIsOptimizing(true);
-      setMessage(`正在生成 ${imageCount} 条优化提示词...`);
+      setMessage(`正在生成 ${count} 条优化提示词...`);
 
       try {
-        const result = await optimizePrompt(config, originalPrompt, imageCount);
+        const result = await optimizePrompt(config, originalPrompt, count);
         optimizedPrompts = result.positivePrompts
           .map((item) => item.trim())
           .filter(Boolean)
-          .slice(0, imageCount);
+          .slice(0, count);
 
         if (optimizedPrompts.length) {
-          finalPrompts = Array.from({ length: imageCount }, (_, index) => {
+          finalPrompts = Array.from({ length: count }, (_, index) => {
             return optimizedPrompts[index] || optimizedPrompts[index % optimizedPrompts.length];
           });
           setMessage(`提示词优化完成，已生成 ${optimizedPrompts.length} 条变体，开始出图...`);
@@ -339,26 +348,26 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
     }
 
     const params = {
-      modelId: model.id,
-      modelName: model.name,
-      provider: model.provider,
+      modelId: targetModel.id,
+      modelName: targetModel.name,
+      provider: targetModel.provider,
       prompt: finalPrompts[0] || originalPrompt,
       originalPrompt,
       finalPrompt: finalPrompts[0] || originalPrompt,
       finalPrompts,
       optimizedPrompt: optimizedPrompts[0] || '',
       optimizedPrompts,
-      promptOptimizationEnabled,
+      promptOptimizationEnabled: optimizationEnabled,
       optimizationApplied: optimizedPrompts.some((item) => item && item !== originalPrompt),
-      ratio,
-      count: imageCount,
-      width: resolution.width,
-      height: resolution.height,
+      ratio: targetRatio,
+      count,
+      width: targetResolution.width,
+      height: targetResolution.height,
     };
 
     const pendingBatch = buildBatch(
       params,
-      Array.from({ length: imageCount }, (_, index) => ({
+      Array.from({ length: count }, (_, index) => ({
         id: `${Date.now()}-${index}`,
         index,
         status: 'pending',
@@ -372,8 +381,8 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
 
     try {
       const resolvedImages = [];
-      const requests = Array.from({ length: imageCount }, (_, index) =>
-        generateOneImage(model, {
+      const requests = Array.from({ length: count }, (_, index) =>
+        generateOneImage(targetModel, {
           prompt: finalPrompts[index] || params.prompt,
           width: params.width,
           height: params.height,
@@ -386,7 +395,7 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
           });
 
           setWorkingBatch(
-            buildBatch(params, mergeBatchImages(imageCount, resolvedImages), {
+            buildBatch(params, mergeBatchImages(count, resolvedImages), {
               id: pendingBatch.id,
               createdAt: pendingBatch.createdAt,
               status: 'running',
@@ -420,13 +429,30 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
     }
   }
 
-  function reuseBatch(batch) {
+  async function handleGenerate() {
+    await runGeneration({
+      promptValue: prompt,
+      modelId: selectedModelId,
+      count: imageCount,
+      ratioValue: ratio,
+      optimizationEnabled: promptOptimizationEnabled,
+    });
+  }
+
+  async function regenerateBatch(batch) {
     setPrompt(getOriginalPrompt(batch.params));
     setSelectedModelId(batch.params.modelId);
     setImageCount(batch.params.count);
     setRatio(batch.params.ratio);
     setPromptOptimizationEnabled(batch.params.promptOptimizationEnabled !== false);
-    setMessage('已复用该批次参数。');
+
+    await runGeneration({
+      promptValue: getOriginalPrompt(batch.params),
+      modelId: batch.params.modelId,
+      count: batch.params.count,
+      ratioValue: batch.params.ratio,
+      optimizationEnabled: batch.params.promptOptimizationEnabled !== false,
+    });
   }
 
   async function copyBatchPrompt(batch) {
@@ -639,9 +665,10 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
                       <button
                         type="button"
                         className="ghost-button"
-                        onClick={() => reuseBatch(batch)}
+                        onClick={() => void regenerateBatch(batch)}
+                        disabled={isGenerating}
                       >
-                        复用参数
+                        重新生成
                       </button>
                       <button
                         type="button"
