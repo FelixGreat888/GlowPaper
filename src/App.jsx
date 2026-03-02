@@ -489,7 +489,7 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
           <textarea
             className="composer-input"
             maxLength={800}
-            rows={7}
+            rows={5}
             value={prompt}
             onChange={(event) => {
               setPrompt(event.target.value);
@@ -499,10 +499,7 @@ function GeneratePage({ config, history, setHistory, setActiveTab }) {
 
           <div className="composer-toolbar">
             <div className="prompt-optimization-toggle">
-              <div className="toggle-copy">
-                <strong>提示词优化</strong>
-                <span>建议开启</span>
-              </div>
+              <strong className="toggle-title">提示词优化</strong>
               <button
                 type="button"
                 className={`switch-button ${promptOptimizationEnabled ? 'active' : ''}`}
