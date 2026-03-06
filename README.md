@@ -10,6 +10,18 @@
 - 本地历史记录缓存
 - LoRA 训练 / 我的 LoRA 占位页
 
+## V1 / V2 双入口
+
+- 主站（当前正式版，V2）：`/`（`index.html` + `src-v2/`）
+- V1 备份入口：`/v1.html`（`v1.html` + `src/`）
+- V2 开发/直达入口：`/v2.html`（`v2.html` + `src-v2/`）
+
+快速进入 V2 开发：
+
+```bash
+npm run dev:v2
+```
+
 ## 本地启动
 
 需要本机安装 Node.js 20+。
