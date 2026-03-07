@@ -1,26 +1,19 @@
-# Vape Wallpaper Studio
+# 流光SVG（佐糖出品）
 
-内部版文生图网页，基于 `Vite + React + Node.js`，支持：
+内部版 SVG 素材工具，当前包含：
 
-- Flux 模型选择
-- 比例 / 张数选择
-- DeepSeek 提示词优化
-- Flux 批量生成
-- 结果预览、单张下载、批量 ZIP 下载
-- 本地历史记录缓存
-- LoRA 训练 / 我的 LoRA 占位页
+- V2 工作台：文生 SVG、上传二次编辑、历史缓存、本地预览
+- 登录注册：邮箱 + 密码 + 邀请码
+- 服务端代理：SVG 生成/编辑请求全部走本站后端，不在前端暴露第三方 API
+- 算粒系统：新用户注册默认赠送 10 算粒，生成与编辑按质量扣减
+- 管理后台：查看用户、禁用/恢复账号、直接调整算粒余额
+- V1 备份入口：继续保留旧版本页面
 
-## V1 / V2 双入口
+## 页面入口
 
-- 主站（当前正式版，V2）：`/`（`index.html` + `src-v2/`）
-- V1 备份入口：`/v1.html`（`v1.html` + `src/`）
-- V2 开发/直达入口：`/v2.html`（`v2.html` + `src-v2/`）
-
-快速进入 V2 开发：
-
-```bash
-npm run dev:v2
-```
+- 主站（正式 V2）：`/` 或 `/v2.html`
+- 管理后台：`/admin.html`
+- V1 备份入口：`/v1.html`
 
 ## 本地启动
 
@@ -32,18 +25,31 @@ npm run dev:v2
 npm install
 ```
 
-2. 准备服务端密钥
+2. 配置环境变量
 
 可选其一：
 
-- 复制 [server.config.example.json](/Users/felixwang/Documents/电子烟壁纸素材/server.config.example.json) 为 `server.config.json`
-- 或直接设置环境变量，参考 [.env.example](/Users/felixwang/Documents/电子烟壁纸素材/.env.example)
+- 复制 [server.config.example.json](/Users/felixwang/Documents/电子烟壁纸素材/server.config.example.json) 为本地私有的 `server.config.json`
+- 或使用 [.env.example](/Users/felixwang/Documents/电子烟壁纸素材/.env.example) 里的变量名直接写入环境
 
-3. 构建并启动
+必须配置的变量：
+
+- `DATABASE_URL`
+- `SESSION_SECRET`
+- `APP_INVITE_CODE`
+- `BOOTSTRAP_ADMIN_EMAIL`
+- `BOOTSTRAP_ADMIN_PASSWORD`
+- `SVG_API_KEY`
+
+如果需要保留 V1 的提示词优化 / Flux 生图能力，还需要：
+
+- `DEEPSEEK_API_KEY`
+- `BFL_API_KEY`
+
+3. 启动后端
 
 ```bash
-npm run build
-npm start
+npm run dev:server
 ```
 
 默认地址：
@@ -52,46 +58,45 @@ npm start
 http://localhost:4173
 ```
 
-## 配置说明
+4. 如需前端热更新，再单独启动 Vite
 
-前端公开配置在 [public/config.json](/Users/felixwang/Documents/电子烟壁纸素材/public/config.json)。
+```bash
+npm run dev:v2
+```
 
-服务端支持以下环境变量：
+Vite 开发服务器默认在 `http://localhost:5173`，并已代理 `/api` 到本地 Node 服务。
 
-- `DEEPSEEK_BASE_URL`
-- `DEEPSEEK_ENDPOINT`
-- `DEEPSEEK_MODEL`
-- `DEEPSEEK_API_KEY`
-- `BFL_API_KEY`
+## 算粒规则
 
-如果环境变量未设置，服务端会回退读取本地 `server.config.json`。
+当前内置规则：
 
-## 正式部署
+- 生成：低 `1` / 中 `2` / 高 `3`
+- 编辑：低 `2` / 中 `3` / 高 `5`
+- 新用户注册成功默认赠送 `10` 算粒
 
-当前仓库已经补齐正式部署所需文件：
+真实余额以后端数据库为准，前端只做展示。
 
-- [render.yaml](/Users/felixwang/Documents/电子烟壁纸素材/render.yaml)：Render Web Service 配置
-- [Dockerfile](/Users/felixwang/Documents/电子烟壁纸素材/Dockerfile)：通用容器部署
-- [.node-version](/Users/felixwang/Documents/电子烟壁纸素材/.node-version)：固定 Node 版本
+## Render 部署
 
-推荐直接部署到 Render：
+仓库已包含 [render.yaml](/Users/felixwang/Documents/电子烟壁纸素材/render.yaml)，会同时创建：
 
-1. 把仓库推到 GitHub / GitLab
-2. 在 Render 新建 Web Service，导入当前仓库
-3. 读取 [render.yaml](/Users/felixwang/Documents/电子烟壁纸素材/render.yaml)
-4. 在 Render 后台补充两个密钥环境变量：
-   `DEEPSEEK_API_KEY`
-   `BFL_API_KEY`
-5. 完成首发后会得到一个长期可访问的 `onrender.com` 域名
+- 一个 Web Service
+- 一个 Render Postgres 数据库
 
-如果你使用其他平台，只要支持长期运行 Node Web Service 或 Docker，也可以直接部署。
+首次部署前，至少补齐这些环境变量：
+
+- `APP_INVITE_CODE`
+- `BOOTSTRAP_ADMIN_EMAIL`
+- `BOOTSTRAP_ADMIN_PASSWORD`
+- `SVG_API_KEY`
+- `DEEPSEEK_API_KEY`（如果还要用 V1 DeepSeek）
+- `BFL_API_KEY`（如果还要用 V1 Flux）
+
+`SESSION_SECRET` 会由 Render 自动生成，`DATABASE_URL` 会自动绑定到 Render Postgres。
 
 ## 安全说明
 
-- `server.config.json` 已加入忽略列表，不应提交到 git。
-- 如果这个目录曾经被上传到远程仓库或共享给他人，建议立即轮换现有 API Key。
-
-## 已知限制
-
-- 由于 Black Forest Labs 不接受当前线上域名的浏览器跨域直连，运行版改为最小同源代理服务，避免 `Failed to fetch`。
-- 当前服务端会代理 Flux 结果图片，历史记录保存的是同源代理地址；如果服务端重启，旧历史里的图片链接可能失效，需要重新生成。
+- `server.config.json` 已加入忽略列表，不能提交到仓库。
+- 前端不再保存 SVG 第三方 API 的域名和 key。
+- 浏览器端请求只会看到本站的 `/api/*`。
+- 这是基础账号体系版本，当前不包含邮箱验证、忘记密码、支付充值、多邀请码管理。

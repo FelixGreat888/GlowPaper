@@ -1,4 +1,17 @@
 {
+  "database": {
+    "connection_string": "postgresql://user:password@host:5432/database"
+  },
+  "app": {
+    "invite_code": "replace-with-your-invite-code",
+    "session_secret": "replace-with-a-long-random-secret",
+    "bootstrap_admin_email": "admin@example.com",
+    "bootstrap_admin_password": "replace-with-admin-password"
+  },
+  "svg": {
+    "base_url": "https://api.svgmaker.io/v1",
+    "api_key": "replace-with-your-svgmaker-key"
+  },
   "deepseek": {
     "base_url": "https://api.deepseek.com",
     "endpoint": "/chat/completions",

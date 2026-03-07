@@ -16,6 +16,12 @@ import {
   generateSvg,
 } from './lib/svgmaker.js';
 import {
+  getCurrentSession,
+  login,
+  logout,
+  register,
+} from './lib/auth.js';
+import {
   addHistoryRecord,
   buildHistoryRecord,
   loadHistory,
@@ -26,7 +32,11 @@ import {
 } from './lib/option-previews.jsx';
 
 const THEME_STORAGE_KEY = 'glowpaper:v2:theme';
-const ACCESS_GATE_STORAGE_KEY = 'glowpaper:v2:access-granted';
+const AUTH_FORM_INITIAL_STATE = {
+  email: '',
+  password: '',
+  inviteCode: '',
+};
 
 const TAB_OPTIONS = [
   { id: 'generate', label: '生成' },
@@ -266,6 +276,20 @@ function isInsufficientCreditsError(error) {
     message.includes('余额不足') ||
     message.includes('算粒不足')
   );
+}
+
+function isUnauthorizedError(error) {
+  const status = Number(error?.status || 0);
+  const code = String(error?.code || '').trim().toUpperCase();
+
+  return status === 401 || code === 'UNAUTHORIZED' || code === 'INVALID_CREDENTIALS';
+}
+
+function isAccountDisabledError(error) {
+  const status = Number(error?.status || 0);
+  const code = String(error?.code || '').trim().toUpperCase();
+
+  return status === 403 && code === 'ACCOUNT_DISABLED';
 }
 
 async function buildEditableFileFromResult(result) {
@@ -809,63 +833,94 @@ function LandingSectionHeader({ eyebrow, title, description }) {
   );
 }
 
-function AccessGateModal({
-  open,
-  value,
+function AuthWorkbenchGate({
+  mode,
+  form,
   error,
-  onChange,
-  onClose,
+  configured,
+  submitting,
+  onModeChange,
+  onFieldChange,
   onSubmit,
 }) {
-  if (!open) {
-    return null;
-  }
-
   return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
-      <div
-        className="access-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="访问秘钥"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header>
-          <div>
-            <small>首次使用验证</small>
-            <h3>请输入访问秘钥</h3>
-          </div>
-          <button type="button" onClick={onClose}>
-            ×
-          </button>
-        </header>
+    <div className="auth-gate">
+      <div className="auth-gate-copy">
+        <span className="section-eyebrow">登录后使用</span>
+        <h2>登录后即可开始生成和编辑 SVG</h2>
+        <p>
+          首次注册需要邀请码。注册成功后会自动获赠 10 算粒，后续生成和编辑都会从当前账号余额里扣减。
+        </p>
+      </div>
 
-        <div className="access-modal-body">
-          <p>验证通过后，即可继续使用生成与编辑功能。</p>
-          <input
-            type="password"
-            value={value}
-            onChange={(event) => onChange(event.target.value)}
-            placeholder="请输入访问秘钥"
-            autoFocus
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                onSubmit();
-              }
-            }}
-          />
-          {error ? <div className="access-modal-error">{error}</div> : null}
+      <div className="auth-gate-card">
+        <div className="auth-mode-switch" role="tablist" aria-label="登录注册切换">
+          <button
+            type="button"
+            className={mode === 'login' ? 'active' : ''}
+            onClick={() => onModeChange('login')}
+          >
+            登录
+          </button>
+          <button
+            type="button"
+            className={mode === 'register' ? 'active' : ''}
+            onClick={() => onModeChange('register')}
+          >
+            注册
+          </button>
         </div>
 
-        <div className="access-modal-actions">
-          <button type="button" className="access-secondary-button" onClick={onClose}>
-            取消
-          </button>
-          <button type="button" className="access-primary-button" onClick={onSubmit}>
-            确认
-          </button>
+        <div className="auth-form-grid">
+          <label>
+            <span>邮箱</span>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(event) => onFieldChange('email', event.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+            />
+          </label>
+
+          <label>
+            <span>密码</span>
+            <input
+              type="password"
+              value={form.password}
+              onChange={(event) => onFieldChange('password', event.target.value)}
+              placeholder="至少 6 位"
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            />
+          </label>
+
+          {mode === 'register' ? (
+            <label className="auth-form-wide">
+              <span>邀请码</span>
+              <input
+                type="text"
+                value={form.inviteCode}
+                onChange={(event) => onFieldChange('inviteCode', event.target.value)}
+                placeholder="请输入邀请码"
+                autoComplete="off"
+              />
+            </label>
+          ) : null}
         </div>
+
+        {!configured ? (
+          <div className="auth-inline-hint">服务端尚未完成配置，暂时不能登录或注册。</div>
+        ) : null}
+        {error ? <div className="auth-inline-error">{error}</div> : null}
+
+        <button
+          type="button"
+          className="auth-submit-button"
+          onClick={onSubmit}
+          disabled={submitting || !configured}
+        >
+          {submitting ? '提交中...' : mode === 'login' ? '登录并进入工作台' : '注册并开始使用'}
+        </button>
       </div>
     </div>
   );
@@ -944,6 +999,13 @@ function App() {
     }
   });
   const [credits, setCredits] = useState(null);
+  const [authMode, setAuthMode] = useState('login');
+  const [authForm, setAuthForm] = useState(AUTH_FORM_INITIAL_STATE);
+  const [authError, setAuthError] = useState('');
+  const [authStatus, setAuthStatus] = useState('loading');
+  const [authConfigured, setAuthConfigured] = useState(true);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const [generatePrompt, setGeneratePrompt] = useState('');
   const [editPrompt, setEditPrompt] = useState('');
@@ -963,17 +1025,6 @@ function App() {
   const [result, setResult] = useState(EMPTY_RESULT);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewBackdrop, setPreviewBackdrop] = useState('dark');
-  const [accessGranted, setAccessGranted] = useState(() => {
-    try {
-      return localStorage.getItem(ACCESS_GATE_STORAGE_KEY) === 'true';
-    } catch {
-      return false;
-    }
-  });
-  const [accessModalOpen, setAccessModalOpen] = useState(false);
-  const [accessInput, setAccessInput] = useState('');
-  const [accessError, setAccessError] = useState('');
-  const [pendingAccessAction, setPendingAccessAction] = useState('');
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyItems, setHistoryItems] = useState(() => loadHistory());
@@ -983,7 +1034,6 @@ function App() {
 
   const retryActionRef = useRef(null);
   const lastStudioTabRef = useRef(GLOWPAPER_CONFIG.defaults.tab);
-  const accessGrantedRef = useRef(accessGranted);
 
   useEffect(() => {
     try {
@@ -994,18 +1044,46 @@ function App() {
   }, [themeMode]);
 
   useEffect(() => {
-    accessGrantedRef.current = accessGranted;
+    let cancelled = false;
 
-    try {
-      if (accessGranted) {
-        localStorage.setItem(ACCESS_GATE_STORAGE_KEY, 'true');
-      } else {
-        localStorage.removeItem(ACCESS_GATE_STORAGE_KEY);
+    async function syncSession() {
+      try {
+        const payload = await getCurrentSession();
+        if (cancelled) {
+          return;
+        }
+
+        const authenticated = Boolean(payload?.authenticated && payload?.user);
+        setAuthConfigured(payload?.configured !== false);
+        setAuthStatus(authenticated ? 'authenticated' : 'guest');
+        setCurrentUser(authenticated ? payload.user : null);
+        setCredits(
+          payload?.creditBalance !== null && payload?.creditBalance !== undefined
+            ? String(payload.creditBalance)
+            : null,
+        );
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setAuthConfigured(true);
+        setAuthStatus('guest');
+        setCurrentUser(null);
+        setCredits(null);
+
+        if (isAccountDisabledError(error)) {
+          setAuthError('账号已被停用，请联系管理员。');
+        }
       }
-    } catch {
-      // Ignore storage errors.
     }
-  }, [accessGranted]);
+
+    void syncSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!uploadedFile) {
@@ -1029,6 +1107,7 @@ function App() {
   const hasRetry = status === 'error' && typeof retryActionRef.current === 'function';
   const generateCreditCost = getCreditCost('generate', quality);
   const editCreditCost = getCreditCost('edit', quality);
+  const isAuthenticated = authStatus === 'authenticated' && Boolean(currentUser);
 
   function updateStyleParam(key, value) {
     setStyleParams((prev) => ({
@@ -1040,7 +1119,10 @@ function App() {
   function updateCredits(value) {
     if (value !== null && value !== undefined && value !== '') {
       setCredits(String(value));
+      return;
     }
+
+    setCredits(null);
   }
 
   function resetPreviewState() {
@@ -1050,53 +1132,72 @@ function App() {
     retryActionRef.current = null;
   }
 
-  function requestAccess(action) {
-    if (accessGrantedRef.current) {
-      return true;
-    }
-
-    setPendingAccessAction(action);
-    setAccessInput('');
-    setAccessError('');
-    setAccessModalOpen(true);
-    return false;
+  function updateAuthField(key, value) {
+    setAuthForm((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
   }
 
-  function closeAccessModal() {
-    setAccessModalOpen(false);
-    setAccessInput('');
-    setAccessError('');
-    setPendingAccessAction('');
+  function resetAuthForm(nextMode) {
+    setAuthMode(nextMode);
+    setAuthError('');
+    setAuthForm(AUTH_FORM_INITIAL_STATE);
   }
 
-  function handleAccessSubmit() {
-    const nextValue = accessInput.trim();
-
-    if (!nextValue) {
-      setAccessError('请输入访问秘钥。');
+  async function handleAuthSubmit() {
+    if (authSubmitting) {
       return;
     }
 
-    if (nextValue !== GLOWPAPER_CONFIG.accessGateKey) {
-      setAccessError('秘钥不正确，请重新输入。');
-      return;
+    setAuthSubmitting(true);
+    setAuthError('');
+
+    try {
+      const payload =
+        authMode === 'login'
+          ? await login({
+              email: authForm.email,
+              password: authForm.password,
+            })
+          : await register({
+              email: authForm.email,
+              password: authForm.password,
+              inviteCode: authForm.inviteCode,
+            });
+
+      setCurrentUser(payload.user || null);
+      setAuthStatus(payload?.authenticated ? 'authenticated' : 'guest');
+      updateCredits(payload?.creditBalance ?? null);
+      setAuthForm(AUTH_FORM_INITIAL_STATE);
+      setHistoryOpen(false);
+      resetPreviewState();
+    } catch (error) {
+      setAuthError(toReadableError(error));
+
+      if (isAccountDisabledError(error)) {
+        setAuthStatus('guest');
+        setCurrentUser(null);
+        updateCredits(null);
+      }
+    } finally {
+      setAuthSubmitting(false);
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      await logout();
+    } catch {
+      // Ignore logout failures and clear local auth state anyway.
     }
 
-    accessGrantedRef.current = true;
-    setAccessGranted(true);
-
-    const nextAction = pendingAccessAction;
-    closeAccessModal();
-
-    window.setTimeout(() => {
-      if (nextAction === 'generate') {
-        void handleGenerate();
-      }
-
-      if (nextAction === 'edit') {
-        void handleEdit();
-      }
-    }, 0);
+    setAuthStatus('guest');
+    setCurrentUser(null);
+    updateCredits(null);
+    setAuthError('');
+    setHistoryOpen(false);
+    resetPreviewState();
   }
 
   function hasEnoughCredits(mode) {
@@ -1117,6 +1218,10 @@ function App() {
   }
 
   function handleRequestError(error) {
+    if (error?.creditBalance !== undefined) {
+      updateCredits(error.creditBalance);
+    }
+
     if (error?.creditsRemaining !== undefined) {
       updateCredits(error.creditsRemaining);
     }
@@ -1124,6 +1229,15 @@ function App() {
     if (isInsufficientCreditsError(error)) {
       setInsufficientCreditsState();
       return;
+    }
+
+    if (isUnauthorizedError(error) || isAccountDisabledError(error)) {
+      setAuthStatus('guest');
+      setCurrentUser(null);
+      updateCredits(null);
+      if (isAccountDisabledError(error)) {
+        setAuthError('账号已被停用，请联系管理员。');
+      }
     }
 
     setStatus('error');
@@ -1214,10 +1328,6 @@ function App() {
       return;
     }
 
-    if (!requestAccess('generate')) {
-      return;
-    }
-
     const prompt = generatePrompt.trim();
     if (!prompt) {
       setStatus('error');
@@ -1248,10 +1358,6 @@ function App() {
 
   async function handleEdit() {
     if (isSubmitting) {
-      return;
-    }
-
-    if (!requestAccess('edit')) {
       return;
     }
 
@@ -1390,7 +1496,36 @@ function App() {
         </div>
 
         <div className="header-right">
-          <span className="credits-chip">剩余算粒：{credits ?? '--'}</span>
+          {isAuthenticated ? (
+            <>
+              <span className="credits-chip">剩余算粒：{credits ?? '--'}</span>
+              <span className="user-chip" title={currentUser.email}>
+                {currentUser.email}
+              </span>
+              {currentUser.role === 'admin' ? (
+                <a className="admin-link-chip" href={GLOWPAPER_CONFIG.adminPath}>
+                  后台管理
+                </a>
+              ) : null}
+              <button type="button" className="ghost-header-button" onClick={handleLogout}>
+                退出登录
+              </button>
+            </>
+          ) : authStatus === 'loading' ? (
+            <span className="credits-chip">正在检查登录状态...</span>
+          ) : (
+            <button
+              type="button"
+              className="ghost-header-button"
+              onClick={() => {
+                document
+                  .getElementById('studio-workbench')
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+            >
+              登录 / 注册
+            </button>
+          )}
           <button
             type="button"
             className="theme-button"
@@ -1411,272 +1546,289 @@ function App() {
         </section>
 
         <section id="studio-workbench" className="studio-card">
-          <div className="top-toolbar">
-            <div className="tab-row" role="tablist" aria-label="模式切换">
-              {TAB_OPTIONS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === tab.id}
-                  className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-                  onClick={() => handleStudioTabChange(tab.id)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className={`history-toggle ${historyOpen ? 'active' : ''}`}
-              onClick={handleToggleHistory}
-              title="历史记录"
-            >
-              <HistoryIcon />
-              历史记录（{historyItems.length}）
-            </button>
-          </div>
-
-          {historyOpen ? (
-            <div className="history-panel history-panel-only">
-              {historyItems.length ? (
-                <div className="history-grid">
-                  {historyItems.map((record) => (
-                    <HistoryCard
-                      key={record.id}
-                      record={record}
-                      onDownloadSvg={handleHistoryDownloadSvg}
-                      onDownloadPng={handleHistoryDownloadPng}
-                      onViewParams={(nextRecord, mode = 'params') => {
-                        if (mode === 'preview') {
-                          setActiveHistoryPreview(nextRecord);
-                          return;
-                        }
-
-                        setActiveHistoryRecord(nextRecord);
-                      }}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="history-empty">
-                  <p>还没有历史记录。</p>
-                  <small>生成或编辑完成后，会按时间自动缓存到浏览器（最多 50 条）。</small>
-                </div>
-              )}
-            </div>
-          ) : null}
-
-          {!historyOpen && (activeTab === 'generate' || activeTab === 'edit') ? (
-            <div className="workspace-grid">
-            <section className="left-pane">
-              {activeTab === 'generate' ? (
-                <div className="control-block">
-                  <label className="field-title" htmlFor="generate-prompt">
-                    创作描述
-                  </label>
-                  <div className="prompt-shell">
-                    <textarea
-                      id="generate-prompt"
-                      value={generatePrompt}
-                      onChange={(event) => setGeneratePrompt(event.target.value)}
-                      placeholder={GLOWPAPER_CONFIG.generatePlaceholder}
-                      rows={6}
-                    />
-                    <div className="prompt-controls">
-                      <span className="credit-hint">消耗{generateCreditCost ?? '--'}算粒</span>
-                      <button
-                        type="button"
-                        className="send-button"
-                        disabled={isSubmitting}
-                        onClick={handleGenerate}
-                        title="生成"
-                      >
-                        {isSubmitting ? '...' : <SendIcon />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="control-block">
-                  <label className="field-title">上传素材</label>
-                  <UploadDropzone
-                    file={uploadedFile}
-                    previewUrl={uploadedPreviewUrl}
-                    onPickFile={(file) => {
-                      if (!isAcceptedImage(file)) {
-                        setStatus('error');
-                        setStatusMessage('仅支持 SVG 和 PNG 文件。');
-                        return;
-                      }
-                      setUploadedFile(file);
-                    }}
-                    onClearFile={() => setUploadedFile(null)}
-                  />
-
-                  <label className="field-title" htmlFor="edit-prompt">
-                    修改说明
-                  </label>
-                  <div className="prompt-shell">
-                    <textarea
-                      id="edit-prompt"
-                      value={editPrompt}
-                      onChange={(event) => setEditPrompt(event.target.value)}
-                      placeholder="描述你想怎么改，比如改配色、加元素、调整风格。"
-                      rows={4}
-                    />
-                    <div className="prompt-controls">
-                      <span className="credit-hint">消耗{editCreditCost ?? '--'}算粒</span>
-                      <button
-                        type="button"
-                        className="send-button edit"
-                        disabled={isSubmitting}
-                        onClick={handleEdit}
-                        title="编辑"
-                      >
-                        {isSubmitting ? '...' : <SendIcon />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="control-block">
-                <h3 className="field-title">生成参数</h3>
-                <div className="pill-grid">
-                  {STYLE_PARAM_FIELDS.map((field, index) => (
-                    <PreviewPillSelect
-                      key={field.key}
-                      fieldKey={field.key}
-                      label={field.label}
-                      value={styleParams[field.key]}
-                      options={STYLE_PARAM_OPTIONS[field.key]}
-                      align={index % 2 === 0 ? 'left' : 'right'}
-                      onChange={(value) => updateStyleParam(field.key, value)}
-                    />
-                  ))}
-                  <PillSelect
-                    label="质量"
-                    value={quality}
-                    options={QUALITY_OPTIONS}
-                    onChange={setQuality}
-                  />
-                  <PillSelect
-                    label="背景"
-                    value={background}
-                    options={BACKGROUND_OPTIONS}
-                    onChange={setBackground}
-                  />
-                  <PillSelect
-                    label="比例"
-                    value={aspectRatio}
-                    options={ASPECT_RATIO_OPTIONS}
-                    onChange={setAspectRatio}
-                  />
-                </div>
-              </div>
-            </section>
-
-            <section className="right-pane">
-              <div className="control-block preview-card">
-                <div className="preview-head">
-                  <span>预览画布</span>
-                  {(status === 'success' || status === 'error' || status === 'loading') && (
-                    <button type="button" className="clear-button" onClick={resetPreviewState} title="清空结果">
-                      ×
+          {isAuthenticated ? (
+            <>
+              <div className="top-toolbar">
+                <div className="tab-row" role="tablist" aria-label="模式切换">
+                  {TAB_OPTIONS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeTab === tab.id}
+                      className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+                      onClick={() => handleStudioTabChange(tab.id)}
+                    >
+                      {tab.label}
                     </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className={`history-toggle ${historyOpen ? 'active' : ''}`}
+                  onClick={handleToggleHistory}
+                  title="历史记录"
+                >
+                  <HistoryIcon />
+                  历史记录（{historyItems.length}）
+                </button>
+              </div>
+
+              {historyOpen ? (
+                <div className="history-panel history-panel-only">
+                  {historyItems.length ? (
+                    <div className="history-grid">
+                      {historyItems.map((record) => (
+                        <HistoryCard
+                          key={record.id}
+                          record={record}
+                          onDownloadSvg={handleHistoryDownloadSvg}
+                          onDownloadPng={handleHistoryDownloadPng}
+                          onViewParams={(nextRecord, mode = 'params') => {
+                            if (mode === 'preview') {
+                              setActiveHistoryPreview(nextRecord);
+                              return;
+                            }
+
+                            setActiveHistoryRecord(nextRecord);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="history-empty">
+                      <p>还没有历史记录。</p>
+                      <small>生成或编辑完成后，会按时间自动缓存到浏览器（最多 50 条）。</small>
+                    </div>
                   )}
                 </div>
+              ) : null}
 
-                <div
-                  className={`preview-canvas state-${status} ${
-                    hasSuccessResult ? `preview-bg-${previewBackdrop}` : ''
-                  }`}
-                >
-                  {status === 'idle' ? (
-                    <div className="status-view">
-                      <PlaceholderIcon />
-                      <p>还没有结果</p>
-                      <small>提交请求后，结果会显示在这里。</small>
+              {!historyOpen && (activeTab === 'generate' || activeTab === 'edit') ? (
+                <div className="workspace-grid">
+                  <section className="left-pane">
+                    {activeTab === 'generate' ? (
+                      <div className="control-block">
+                        <label className="field-title" htmlFor="generate-prompt">
+                          创作描述
+                        </label>
+                        <div className="prompt-shell">
+                          <textarea
+                            id="generate-prompt"
+                            value={generatePrompt}
+                            onChange={(event) => setGeneratePrompt(event.target.value)}
+                            placeholder={GLOWPAPER_CONFIG.generatePlaceholder}
+                            rows={6}
+                          />
+                          <div className="prompt-controls">
+                            <span className="credit-hint">消耗{generateCreditCost ?? '--'}算粒</span>
+                            <button
+                              type="button"
+                              className="send-button"
+                              disabled={isSubmitting}
+                              onClick={handleGenerate}
+                              title="生成"
+                            >
+                              {isSubmitting ? '...' : <SendIcon />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="control-block">
+                        <label className="field-title">上传素材</label>
+                        <UploadDropzone
+                          file={uploadedFile}
+                          previewUrl={uploadedPreviewUrl}
+                          onPickFile={(file) => {
+                            if (!isAcceptedImage(file)) {
+                              setStatus('error');
+                              setStatusMessage('仅支持 SVG 和 PNG 文件。');
+                              return;
+                            }
+                            setUploadedFile(file);
+                          }}
+                          onClearFile={() => setUploadedFile(null)}
+                        />
+
+                        <label className="field-title" htmlFor="edit-prompt">
+                          修改说明
+                        </label>
+                        <div className="prompt-shell">
+                          <textarea
+                            id="edit-prompt"
+                            value={editPrompt}
+                            onChange={(event) => setEditPrompt(event.target.value)}
+                            placeholder="描述你想怎么改，比如改配色、加元素、调整风格。"
+                            rows={4}
+                          />
+                          <div className="prompt-controls">
+                            <span className="credit-hint">消耗{editCreditCost ?? '--'}算粒</span>
+                            <button
+                              type="button"
+                              className="send-button edit"
+                              disabled={isSubmitting}
+                              onClick={handleEdit}
+                              title="编辑"
+                            >
+                              {isSubmitting ? '...' : <SendIcon />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="control-block">
+                      <h3 className="field-title">生成参数</h3>
+                      <div className="pill-grid">
+                        {STYLE_PARAM_FIELDS.map((field, index) => (
+                          <PreviewPillSelect
+                            key={field.key}
+                            fieldKey={field.key}
+                            label={field.label}
+                            value={styleParams[field.key]}
+                            options={STYLE_PARAM_OPTIONS[field.key]}
+                            align={index % 2 === 0 ? 'left' : 'right'}
+                            onChange={(value) => updateStyleParam(field.key, value)}
+                          />
+                        ))}
+                        <PillSelect
+                          label="质量"
+                          value={quality}
+                          options={QUALITY_OPTIONS}
+                          onChange={setQuality}
+                        />
+                        <PillSelect
+                          label="背景"
+                          value={background}
+                          options={BACKGROUND_OPTIONS}
+                          onChange={setBackground}
+                        />
+                        <PillSelect
+                          label="比例"
+                          value={aspectRatio}
+                          options={ASPECT_RATIO_OPTIONS}
+                          onChange={setAspectRatio}
+                        />
+                      </div>
                     </div>
-                  ) : null}
+                  </section>
 
-                  {status === 'loading' ? (
-                    <div className="status-view">
-                      <div className="spinner" />
-                      <p>{statusMessage || '已收到请求，正在处理中...'}</p>
+                  <section className="right-pane">
+                    <div className="control-block preview-card">
+                      <div className="preview-head">
+                        <span>预览画布</span>
+                        {(status === 'success' || status === 'error' || status === 'loading') && (
+                          <button type="button" className="clear-button" onClick={resetPreviewState} title="清空结果">
+                            ×
+                          </button>
+                        )}
+                      </div>
+
+                      <div
+                        className={`preview-canvas state-${status} ${
+                          hasSuccessResult ? `preview-bg-${previewBackdrop}` : ''
+                        }`}
+                      >
+                        {status === 'idle' ? (
+                          <div className="status-view">
+                            <PlaceholderIcon />
+                            <p>还没有结果</p>
+                            <small>提交请求后，结果会显示在这里。</small>
+                          </div>
+                        ) : null}
+
+                        {status === 'loading' ? (
+                          <div className="status-view">
+                            <div className="spinner" />
+                            <p>{statusMessage || '已收到请求，正在处理中...'}</p>
+                          </div>
+                        ) : null}
+
+                        {status === 'error' ? (
+                          <div className="status-view error">
+                            <p>{statusMessage}</p>
+                            {hasRetry ? (
+                              <button
+                                type="button"
+                                className="retry-button"
+                                onClick={handleRetry}
+                                disabled={isSubmitting}
+                              >
+                                重试
+                              </button>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        {status === 'success' ? (
+                          <div className="result-view">
+                            {previewSrc ? <img src={previewSrc} alt="生成结果" /> : null}
+                          </div>
+                        ) : null}
+
+                        {hasSuccessResult ? (
+                          <div className="preview-bg-toggle" role="group" aria-label="预览背景切换">
+                            <button
+                              type="button"
+                              className={`preview-bg-button ${previewBackdrop === 'dark' ? 'active' : ''}`}
+                              onClick={() => setPreviewBackdrop('dark')}
+                              title="切换到深色背景"
+                              aria-label="深色背景"
+                            >
+                              <span className="preview-bg-dot dark" />
+                            </button>
+                            <button
+                              type="button"
+                              className={`preview-bg-button ${previewBackdrop === 'light' ? 'active' : ''}`}
+                              onClick={() => setPreviewBackdrop('light')}
+                              title="切换到白色背景"
+                              aria-label="白色背景"
+                            >
+                              <span className="preview-bg-dot light" />
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                  ) : null}
 
-                  {status === 'error' ? (
-                    <div className="status-view error">
-                      <p>{statusMessage}</p>
-                      {hasRetry ? (
-                        <button
-                          type="button"
-                          className="retry-button"
-                          onClick={handleRetry}
-                          disabled={isSubmitting}
-                        >
-                          重试
-                        </button>
-                      ) : null}
-                    </div>
-                  ) : null}
-
-                  {status === 'success' ? (
-                    <div className="result-view">
-                      {previewSrc ? <img src={previewSrc} alt="生成结果" /> : null}
-                    </div>
-                  ) : null}
-
-                  {hasSuccessResult ? (
-                    <div className="preview-bg-toggle" role="group" aria-label="预览背景切换">
+                    <div className="download-row">
                       <button
                         type="button"
-                        className={`preview-bg-button ${previewBackdrop === 'dark' ? 'active' : ''}`}
-                        onClick={() => setPreviewBackdrop('dark')}
-                        title="切换到深色背景"
-                        aria-label="深色背景"
+                        className="download-button"
+                        onClick={handleDownloadSvgCurrent}
+                        disabled={!hasSuccessResult || !result.svgText}
                       >
-                        <span className="preview-bg-dot dark" />
+                        下载 SVG
                       </button>
                       <button
                         type="button"
-                        className={`preview-bg-button ${previewBackdrop === 'light' ? 'active' : ''}`}
-                        onClick={() => setPreviewBackdrop('light')}
-                        title="切换到白色背景"
-                        aria-label="白色背景"
+                        className="download-button"
+                        onClick={handleDownloadPngCurrent}
+                        disabled={!hasSuccessResult || !result.pngDataUrl}
                       >
-                        <span className="preview-bg-dot light" />
+                        下载 PNG
                       </button>
                     </div>
-                  ) : null}
+                  </section>
                 </div>
-              </div>
-
-              <div className="download-row">
-                <button
-                  type="button"
-                  className="download-button"
-                  onClick={handleDownloadSvgCurrent}
-                  disabled={!hasSuccessResult || !result.svgText}
-                >
-                  下载 SVG
-                </button>
-                <button
-                  type="button"
-                  className="download-button"
-                  onClick={handleDownloadPngCurrent}
-                  disabled={!hasSuccessResult || !result.pngDataUrl}
-                >
-                  下载 PNG
-                </button>
-              </div>
-            </section>
-            </div>
-          ) : null}
+              ) : null}
+            </>
+          ) : authStatus === 'loading' ? (
+            <div className="auth-loading-state">正在准备登录环境...</div>
+          ) : (
+            <AuthWorkbenchGate
+              mode={authMode}
+              form={authForm}
+              error={authError}
+              configured={authConfigured}
+              submitting={authSubmitting}
+              onModeChange={resetAuthForm}
+              onFieldChange={updateAuthField}
+              onSubmit={handleAuthSubmit}
+            />
+          )}
         </section>
 
         <section className="proof-band">
@@ -1763,14 +1915,6 @@ function App() {
         </footer>
       </main>
 
-      <AccessGateModal
-        open={accessModalOpen}
-        value={accessInput}
-        error={accessError}
-        onChange={setAccessInput}
-        onClose={closeAccessModal}
-        onSubmit={handleAccessSubmit}
-      />
       <HistoryPreviewModal
         record={activeHistoryPreview}
         onClose={() => setActiveHistoryPreview(null)}

@@ -1,8 +1,6 @@
 export const GLOWPAPER_CONFIG = {
   brandName: '流光SVG（佐糖出品）',
-  accessGateKey: 'picwish666',
-  apiBaseUrl: 'https://api.svgmaker.io/v1',
-  apiKey: 'svgmaker-io52c3e86e3a694327',
+  adminPath: '/admin.html',
   generatePlaceholder: '描述您想生成的SVG，比如 摩天轮，烟花，伦敦桥，河流，月亮',
   defaults: {
     tab: 'generate',

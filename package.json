@@ -9,12 +9,14 @@
   "scripts": {
     "dev": "vite",
     "dev:v2": "vite --open /v2.html",
+    "dev:server": "node server.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server.mjs"
   },
   "dependencies": {
     "jszip": "^3.10.1",
+    "pg": "^8.20.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
