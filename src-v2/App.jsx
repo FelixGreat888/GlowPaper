@@ -213,6 +213,41 @@ const LOADING_STEPS = {
   ],
 };
 
+const LOADING_COPY = {
+  auth: {
+    statuses: ['正在同步登录状态...'],
+    tips: ['登录成功后会自动回到当前工作台。'],
+  },
+  generate: {
+    statuses: [
+      '正在解析画面提示词...',
+      '正在构建基础矢量骨架...',
+      '匹配色彩美学与节点优化...',
+      '几乎完成了，正在输出 SVG...',
+    ],
+    tips: [
+      '提示：使用逗号分隔关键词，AI 能更精准地理解画面需求。',
+      '技巧：在风格参数里选择“线稿”，更容易得到干净的透明底素材。',
+      '提示：构图方式切到“网格排布”，更适合一整套图标或贴纸。',
+      '技巧：生成结果是 SVG，可继续在矢量软件里二次编辑。',
+    ],
+  },
+  edit: {
+    statuses: [
+      '正在分析上传素材结构...',
+      '正在重组原始矢量骨架...',
+      '匹配新的风格参数与配色...',
+      '几乎完成了，正在输出编辑结果...',
+    ],
+    tips: [
+      '提示：上传轮廓更清晰的 PNG 或 SVG，编辑结果通常更稳定。',
+      '技巧：先说明“保留主体”，再写修改方向，局部编辑会更准确。',
+      '提示：少色和线稿更适合继续进入印刷与包装场景。',
+      '技巧：结果支持 SVG 和 PNG 双下载，方便直接确认和交付。',
+    ],
+  },
+};
+
 function clampValue(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
@@ -228,6 +263,10 @@ function getActiveLoadingStep(mode, progress) {
   }
 
   return activeStep;
+}
+
+function getLoadingCopy(mode) {
+  return LOADING_COPY[mode] || LOADING_COPY.generate;
 }
 
 function buildLabelMap(options) {
@@ -1447,6 +1486,8 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingMode, setLoadingMode] = useState('generate');
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStatusIndex, setLoadingStatusIndex] = useState(0);
+  const [loadingTipIndex, setLoadingTipIndex] = useState(0);
   const [previewBackdrop, setPreviewBackdrop] = useState('dark');
 
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -1457,7 +1498,8 @@ function App() {
 
   const retryActionRef = useRef(null);
   const lastStudioTabRef = useRef(GLOWPAPER_CONFIG.defaults.tab);
-  const pendingProtectedActionRef = useRef(null);
+  const pendingProtectedActionRef = useRef('');
+  const requestVersionRef = useRef(0);
 
   useEffect(() => {
     try {
@@ -1536,6 +1578,10 @@ function App() {
   const hasProgressOverlay =
     status === 'loading' && (loadingMode === 'generate' || loadingMode === 'edit');
   const activeLoadingStep = getActiveLoadingStep(loadingMode, loadingProgress);
+  const loadingCopy = getLoadingCopy(loadingMode);
+  const loadingStatusText =
+    loadingCopy.statuses[loadingStatusIndex % loadingCopy.statuses.length] || statusMessage;
+  const loadingTipText = loadingCopy.tips[loadingTipIndex % loadingCopy.tips.length] || '';
 
   useEffect(() => {
     if (status !== 'loading' || (loadingMode !== 'generate' && loadingMode !== 'edit')) {
@@ -1559,6 +1605,28 @@ function App() {
     };
   }, [loadingMode, status]);
 
+  useEffect(() => {
+    setLoadingStatusIndex(0);
+    setLoadingTipIndex(0);
+
+    if (!hasProgressOverlay) {
+      return undefined;
+    }
+
+    const statusIntervalId = window.setInterval(() => {
+      setLoadingStatusIndex((current) => (current + 1) % loadingCopy.statuses.length);
+    }, 2500);
+
+    const tipIntervalId = window.setInterval(() => {
+      setLoadingTipIndex((current) => (current + 1) % loadingCopy.tips.length);
+    }, 4000);
+
+    return () => {
+      window.clearInterval(statusIntervalId);
+      window.clearInterval(tipIntervalId);
+    };
+  }, [hasProgressOverlay, loadingCopy.statuses.length, loadingCopy.tips.length, loadingMode]);
+
   function updateStyleParam(key, value) {
     setStyleParams((prev) => ({
       ...prev,
@@ -1575,19 +1643,29 @@ function App() {
     setCredits(null);
   }
 
+  function invalidatePendingRequests() {
+    requestVersionRef.current += 1;
+    setIsSubmitting(false);
+  }
+
   function resetPreviewState() {
+    invalidatePendingRequests();
     setStatus('idle');
     setStatusMessage('准备就绪，可以开始生成或编辑。');
     setResult(EMPTY_RESULT);
+    setLoadingMode(activeTab === 'edit' ? 'edit' : 'generate');
     setLoadingProgress(0);
     retryActionRef.current = null;
   }
 
   function beginLoading(nextMode, message) {
+    const requestId = requestVersionRef.current + 1;
+    requestVersionRef.current = requestId;
     setLoadingMode(nextMode);
     setLoadingProgress(6);
     setStatus('loading');
     setStatusMessage(message);
+    return requestId;
   }
 
   function updateAuthField(key, value) {
@@ -1615,7 +1693,7 @@ function App() {
       return;
     }
 
-    pendingProtectedActionRef.current = null;
+    pendingProtectedActionRef.current = '';
     setAuthError('');
     setAuthDialogOpen(false);
   }
@@ -1645,17 +1723,10 @@ function App() {
       setAuthStatus(payload?.authenticated ? 'authenticated' : 'guest');
       updateCredits(payload?.creditBalance ?? null);
       setAuthForm(AUTH_FORM_INITIAL_STATE);
+      setAuthError('');
       setAuthDialogOpen(false);
       setHistoryOpen(false);
       resetPreviewState();
-
-      const pendingAction = pendingProtectedActionRef.current;
-      pendingProtectedActionRef.current = null;
-      if (typeof pendingAction === 'function') {
-        window.setTimeout(() => {
-          void pendingAction();
-        }, 0);
-      }
     } catch (error) {
       setAuthError(toReadableError(error));
 
@@ -1670,19 +1741,27 @@ function App() {
   }
 
   async function handleLogout() {
-    try {
-      await logout();
-    } catch {
-      // Ignore logout failures and clear local auth state anyway.
-    }
-
+    pendingProtectedActionRef.current = '';
     setAuthStatus('guest');
     setCurrentUser(null);
     updateCredits(null);
+    setAuthMode('login');
+    setAuthForm(AUTH_FORM_INITIAL_STATE);
     setAuthError('');
+    setAuthConfigured(true);
+    setAuthSubmitting(false);
     setAuthDialogOpen(false);
     setHistoryOpen(false);
+    setActiveHistoryRecord(null);
+    setActiveHistoryPreview(null);
+    setCopiedPromptRecordId('');
     resetPreviewState();
+
+    try {
+      await logout();
+    } catch {
+      // Ignore logout failures after local state is cleared.
+    }
   }
 
   function hasEnoughCredits(mode) {
@@ -1768,10 +1847,13 @@ function App() {
 
   async function runGenerate(payload) {
     setIsSubmitting(true);
-    beginLoading('generate', '已收到请求，正在生成 SVG...');
+    const requestId = beginLoading('generate', '已收到请求，正在生成 SVG...');
 
     try {
       const { result: nextResult, credits: nextCredits } = await generateSvg(payload);
+      if (requestId !== requestVersionRef.current) {
+        return;
+      }
       setLoadingProgress(100);
       setResult(nextResult);
       setStatus('success');
@@ -1779,18 +1861,26 @@ function App() {
       updateCredits(nextCredits);
       appendHistory({ mode: 'generate', prompt: payload.prompt, nextResult });
     } catch (error) {
+      if (requestId !== requestVersionRef.current) {
+        return;
+      }
       handleRequestError(error);
     } finally {
-      setIsSubmitting(false);
+      if (requestId === requestVersionRef.current) {
+        setIsSubmitting(false);
+      }
     }
   }
 
   async function runEdit(payload) {
     setIsSubmitting(true);
-    beginLoading('edit', '已收到请求，正在执行编辑...');
+    const requestId = beginLoading('edit', '已收到请求，正在执行编辑...');
 
     try {
       const { result: nextResult, credits: nextCredits } = await editSvg(payload);
+      if (requestId !== requestVersionRef.current) {
+        return;
+      }
       setLoadingProgress(100);
       setResult(nextResult);
       setStatus('success');
@@ -1803,9 +1893,14 @@ function App() {
         nextResult,
       });
     } catch (error) {
+      if (requestId !== requestVersionRef.current) {
+        return;
+      }
       handleRequestError(error);
     } finally {
-      setIsSubmitting(false);
+      if (requestId === requestVersionRef.current) {
+        setIsSubmitting(false);
+      }
     }
   }
 
@@ -1824,7 +1919,7 @@ function App() {
     }
 
     if (!isAuthenticated) {
-      openAuthDialog('login', handleGenerate);
+      openAuthDialog('login', 'generate');
       return;
     }
 
@@ -1871,7 +1966,7 @@ function App() {
     }
 
     if (!isAuthenticated) {
-      openAuthDialog('login', handleEdit);
+      openAuthDialog('login', 'edit');
       return;
     }
 
@@ -1915,6 +2010,30 @@ function App() {
 
     await retryActionRef.current();
   }
+
+  useEffect(() => {
+    if (authDialogOpen || authStatus !== 'authenticated' || !currentUser || !pendingProtectedActionRef.current) {
+      return undefined;
+    }
+
+    const nextAction = pendingProtectedActionRef.current;
+    pendingProtectedActionRef.current = '';
+
+    const timeoutId = window.setTimeout(() => {
+      if (nextAction === 'generate') {
+        void handleGenerate();
+        return;
+      }
+
+      if (nextAction === 'edit') {
+        void handleEdit();
+      }
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [authDialogOpen, authStatus, currentUser, handleEdit, handleGenerate]);
 
   function showErrorMessage(error) {
     setStatus('error');
@@ -2258,21 +2377,45 @@ function App() {
                         <div className={`canvas-overlay ${hasPreviewAsset ? 'has-preview' : ''}`}>
                           {hasProgressOverlay ? (
                             <div className="loading-panel">
-                              <div className="loading-panel-topline">
-                                <span>{loadingMode === 'edit' ? '正在编辑' : '正在生成'}</span>
-                                <strong>{Math.round(loadingProgress)}%</strong>
+                              <div className="ai-loader-container" aria-hidden="true">
+                                <div className="vector-ring vector-ring-outer" />
+                                <div className="vector-ring vector-ring-inner" />
+                                <div className="core-glow" />
                               </div>
-                              <div className="loading-progress-track" aria-hidden="true">
-                                <span
-                                  className="loading-progress-fill"
-                                  style={{ width: `${loadingProgress}%` }}
-                                />
+
+                              <div className="loading-content">
+                                <div className="loading-panel-topline">
+                                  <span>{loadingMode === 'edit' ? '编辑中' : '生成中'}</span>
+                                  <strong>{Math.round(loadingProgress)}%</strong>
+                                </div>
+
+                                <div
+                                  key={`${loadingMode}-${loadingStatusIndex}`}
+                                  className="status-text"
+                                  aria-live="polite"
+                                >
+                                  {loadingStatusText}
+                                </div>
+
+                                <div className="loading-step-chip">{activeLoadingStep.title}</div>
+
+                                <div className="progress-bar-bg" aria-hidden="true">
+                                  <div
+                                    className="progress-bar-fill"
+                                    style={{ width: `${loadingProgress}%` }}
+                                  />
+                                </div>
+
+                                <div className="tip-container">
+                                  <div key={`${loadingMode}-${loadingTipIndex}`} className="pro-tip">
+                                    {loadingTipText}
+                                  </div>
+                                </div>
+
+                                {hasPreviewAsset ? (
+                                  <div className="loading-retain-note">当前保留上一版预览，方便继续对比。</div>
+                                ) : null}
                               </div>
-                              <p>{statusMessage || '已收到请求，正在处理中...'}</p>
-                              <small>{activeLoadingStep.title} · {activeLoadingStep.detail}</small>
-                              {hasPreviewAsset ? (
-                                <div className="loading-retain-note">当前保留上一版预览，方便继续对比。</div>
-                              ) : null}
                             </div>
                           ) : (
                             <div className="status-view compact">
