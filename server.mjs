@@ -1330,7 +1330,7 @@ function normalizeSvgText(value) {
     return '';
   }
 
-  if (raw.startsWith('<svg')) {
+  if (raw.startsWith('<svg') || (raw.startsWith('<?xml') && raw.includes('<svg'))) {
     return raw;
   }
 
@@ -1348,7 +1348,7 @@ function normalizeSvgText(value) {
     }
   }
 
-  return raw;
+  return '';
 }
 
 function extractSvgResult(payload) {

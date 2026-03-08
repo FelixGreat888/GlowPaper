@@ -6,13 +6,52 @@ function parseJsonSafely(text) {
   }
 }
 
-function buildApiError(response, payload, fallbackMessage) {
+function looksLikeHtmlDocument(text) {
+  if (!text) {
+    return false;
+  }
+
+  const sample = String(text).trim().slice(0, 240).toLowerCase();
+  return (
+    sample.startsWith('<!doctype html') ||
+    sample.startsWith('<html') ||
+    sample.includes('<head') ||
+    sample.includes('<body') ||
+    sample.includes('cloudflare')
+  );
+}
+
+function getDefaultStatusMessage(status) {
+  if (status === 401) {
+    return '请先登录后再继续';
+  }
+
+  if (status === 402) {
+    return '算粒不足，请联系佐糖团队充值';
+  }
+
+  if (status === 403) {
+    return '当前账号无权执行此操作';
+  }
+
+  if (status >= 500) {
+    return '服务暂时不可用，请稍后重试';
+  }
+
+  return `请求失败（${status}）`;
+}
+
+function buildApiError(response, payload, raw, fallbackMessage) {
   const nestedError =
     payload?.error && typeof payload.error === 'object' ? payload.error : null;
+
+  const safeFallback =
+    looksLikeHtmlDocument(raw) ? getDefaultStatusMessage(response.status) : raw;
 
   const error = new Error(
     nestedError?.message ||
       payload?.message ||
+      safeFallback ||
       fallbackMessage ||
       `请求失败（${response.status}）`,
   );
@@ -67,10 +106,10 @@ export async function requestApi(url, options = {}) {
     throw buildApiError(
       response,
       payload,
-      raw || `请求失败（${response.status}）`,
+      raw,
+      getDefaultStatusMessage(response.status),
     );
   }
 
   return payload;
 }
-
