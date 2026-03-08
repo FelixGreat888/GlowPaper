@@ -505,7 +505,7 @@ function PillSelect({ label, value, options, onChange, compact = false }) {
   );
 }
 
-function PreviewPillSelect({ label, fieldKey, value, options, onChange, align = 'left' }) {
+function PreviewPillSelect({ label, fieldKey, value, options, onChange, align = 'left', themeMode = 'dark' }) {
   const [open, setOpen] = useState(false);
   const [hoveredValue, setHoveredValue] = useState(value);
   const rootRef = useRef(null);
@@ -513,6 +513,36 @@ function PreviewPillSelect({ label, fieldKey, value, options, onChange, align = 
   const menuRef = useRef(null);
   const [menuStyle, setMenuStyle] = useState(null);
   const optionValues = options.map((option) => option.value);
+  const menuThemeStyle =
+    themeMode === 'light'
+      ? {
+          '--menu-bg': 'rgba(255, 255, 255, 0.99)',
+          '--menu-border': 'rgba(232, 226, 240, 0.95)',
+          '--menu-divider': 'rgba(26, 21, 37, 0.06)',
+          '--menu-accent-soft': 'rgba(155, 77, 255, 0.1)',
+          '--menu-text-primary': '#1a1525',
+          '--menu-text-secondary': '#4a3f5e',
+          '--menu-text-muted': '#8b79a3',
+          '--menu-aside-bg':
+            'radial-gradient(circle at top right, rgba(155, 77, 255, 0.08), transparent 34%), linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(248, 244, 252, 0.98))',
+          '--menu-canvas-bg': 'rgba(247, 245, 250, 0.98)',
+          '--menu-shadow':
+            '0 18px 40px rgba(30, 20, 50, 0.12), 0 4px 14px rgba(30, 20, 50, 0.05)',
+        }
+      : {
+          '--menu-bg': 'rgba(8, 6, 16, 0.98)',
+          '--menu-border': 'rgba(174, 120, 244, 0.3)',
+          '--menu-divider': 'rgba(255, 255, 255, 0.04)',
+          '--menu-accent-soft': 'rgba(196, 87, 255, 0.2)',
+          '--menu-text-primary': '#f5ebff',
+          '--menu-text-secondary': '#b7a6cf',
+          '--menu-text-muted': '#8c7ca7',
+          '--menu-aside-bg':
+            'radial-gradient(circle at 20% 18%, rgba(177, 89, 255, 0.14), transparent 34%), rgba(11, 8, 20, 0.98)',
+          '--menu-canvas-bg': 'rgba(10, 8, 20, 0.9)',
+          '--menu-shadow':
+            '0 18px 50px rgba(5, 3, 10, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03) inset',
+        };
 
   const activeValue = hoveredValue || value;
   const activeMeta = getOptionPreviewMeta(fieldKey, activeValue);
@@ -773,8 +803,8 @@ function PreviewPillSelect({ label, fieldKey, value, options, onChange, align = 
         ? createPortal(
             <div
               ref={menuRef}
-              className={`preview-select-menu align-${align}`}
-              style={menuStyle}
+              className={`preview-select-menu align-${align} menu-theme-${themeMode}`}
+              style={{ ...menuStyle, ...menuThemeStyle }}
               onMouseLeave={() => setHoveredValue(value)}
             >
               <div className="preview-select-options" role="listbox" aria-label={label}>
@@ -2318,6 +2348,7 @@ function App() {
                           value={styleParams[field.key]}
                           options={STYLE_PARAM_OPTIONS[field.key]}
                           align={index % 2 === 0 ? 'left' : 'right'}
+                          themeMode={themeMode}
                           onChange={(value) => updateStyleParam(field.key, value)}
                         />
                       ))}
