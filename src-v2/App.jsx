@@ -195,6 +195,41 @@ const USECASE_ITEMS = [
   },
 ];
 
+const LOADING_STEPS = {
+  auth: [
+    { progress: 24, title: '同步账号状态', detail: '正在确认当前登录与算粒信息。' },
+  ],
+  generate: [
+    { progress: 8, title: '整理提示词', detail: '正在归纳你的主题、构图和风格参数。' },
+    { progress: 34, title: '生成矢量草图', detail: '先搭好主体轮廓和基础元素关系。' },
+    { progress: 62, title: '补齐图形细节', detail: '继续完善层次、装饰和画面完整度。' },
+    { progress: 84, title: '整理交付格式', detail: '正在准备 SVG 和 PNG 预览结果。' },
+  ],
+  edit: [
+    { progress: 8, title: '分析原图结构', detail: '先识别上传素材的轮廓、层次与可编辑部分。' },
+    { progress: 36, title: '套用修改方向', detail: '根据你的编辑描述重组图形与风格。' },
+    { progress: 64, title: '细化局部变化', detail: '继续补齐细节，避免只改表面样式。' },
+    { progress: 84, title: '输出新版本', detail: '正在整理可预览、可下载的新结果。' },
+  ],
+};
+
+function clampValue(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getActiveLoadingStep(mode, progress) {
+  const steps = LOADING_STEPS[mode] || LOADING_STEPS.generate;
+  let activeStep = steps[0];
+
+  for (const step of steps) {
+    if (progress >= step.progress) {
+      activeStep = step;
+    }
+  }
+
+  return activeStep;
+}
+
 function buildLabelMap(options) {
   return options.reduce((map, item) => {
     map[item.value] = item.label;
@@ -438,10 +473,154 @@ function PreviewPillSelect({ label, fieldKey, value, options, onChange, align = 
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
   const [menuStyle, setMenuStyle] = useState(null);
+  const optionValues = options.map((option) => option.value);
 
   const activeValue = hoveredValue || value;
   const activeMeta = getOptionPreviewMeta(fieldKey, activeValue);
   const selectedLabel = findLabel(buildLabelMap(options), value);
+
+  function focusOption(nextValue) {
+    if (!menuRef.current) {
+      return;
+    }
+
+    const nextOption = Array.from(
+      menuRef.current.querySelectorAll('[data-option-value]'),
+    ).find((element) => element.getAttribute('data-option-value') === String(nextValue));
+
+    if (nextOption instanceof HTMLButtonElement) {
+      nextOption.focus();
+    }
+  }
+
+  function getOptionIndex(targetValue) {
+    const index = optionValues.indexOf(targetValue);
+    return index === -1 ? 0 : index;
+  }
+
+  function previewOptionByIndex(targetIndex, shouldFocus = false) {
+    const nextIndex = clampValue(targetIndex, 0, optionValues.length - 1);
+    const nextValue = optionValues[nextIndex];
+    setHoveredValue(nextValue);
+
+    if (shouldFocus) {
+      window.requestAnimationFrame(() => {
+        focusOption(nextValue);
+      });
+    }
+
+    return nextValue;
+  }
+
+  function nudgePreview(direction, shouldFocus = false) {
+    const baseValue = open ? activeValue : value;
+    return previewOptionByIndex(getOptionIndex(baseValue) + direction, shouldFocus);
+  }
+
+  function commitValue(nextValue) {
+    onChange(nextValue);
+    setHoveredValue(nextValue);
+    setOpen(false);
+    window.requestAnimationFrame(() => {
+      triggerRef.current?.focus();
+    });
+  }
+
+  function handleTriggerKeyDown(event) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+      }
+      nudgePreview(1, true);
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+      }
+      nudgePreview(-1, true);
+      return;
+    }
+
+    if (event.key === 'Home') {
+      event.preventDefault();
+      setOpen(true);
+      previewOptionByIndex(0, true);
+      return;
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault();
+      setOpen(true);
+      previewOptionByIndex(optionValues.length - 1, true);
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+        setHoveredValue(value);
+        window.requestAnimationFrame(() => {
+          focusOption(value);
+        });
+        return;
+      }
+
+      commitValue(activeValue);
+      return;
+    }
+
+    if (event.key === 'Escape' && open) {
+      event.preventDefault();
+      setOpen(false);
+      setHoveredValue(value);
+    }
+  }
+
+  function handleOptionKeyDown(event, optionValue) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      nudgePreview(1, true);
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      nudgePreview(-1, true);
+      return;
+    }
+
+    if (event.key === 'Home') {
+      event.preventDefault();
+      previewOptionByIndex(0, true);
+      return;
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault();
+      previewOptionByIndex(optionValues.length - 1, true);
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      commitValue(optionValue);
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setOpen(false);
+      setHoveredValue(value);
+      window.requestAnimationFrame(() => {
+        triggerRef.current?.focus();
+      });
+    }
+  }
 
   useEffect(() => {
     if (!open) {
@@ -471,11 +650,11 @@ function PreviewPillSelect({ label, fieldKey, value, options, onChange, align = 
       }
     }
 
-    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [open, value]);
@@ -545,6 +724,7 @@ function PreviewPillSelect({ label, fieldKey, value, options, onChange, align = 
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((prev) => !prev)}
+        onKeyDown={handleTriggerKeyDown}
       >
         <span>{selectedLabel}</span>
         <ChevronIcon />
@@ -565,16 +745,14 @@ function PreviewPillSelect({ label, fieldKey, value, options, onChange, align = 
                     type="button"
                     role="option"
                     aria-selected={value === option.value}
+                    data-option-value={option.value}
                     className={`preview-select-option ${
                       activeValue === option.value ? 'previewing' : ''
                     } ${value === option.value ? 'selected' : ''}`}
                     onMouseEnter={() => setHoveredValue(option.value)}
                     onFocus={() => setHoveredValue(option.value)}
-                    onClick={() => {
-                      onChange(option.value);
-                      setHoveredValue(option.value);
-                      setOpen(false);
-                    }}
+                    onKeyDown={(event) => handleOptionKeyDown(event, option.value)}
+                    onClick={() => commitValue(option.value)}
                   >
                     {option.label}
                   </button>
@@ -1267,6 +1445,8 @@ function App() {
   const [statusMessage, setStatusMessage] = useState('准备就绪，可以开始生成或编辑。');
   const [result, setResult] = useState(EMPTY_RESULT);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingMode, setLoadingMode] = useState('generate');
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [previewBackdrop, setPreviewBackdrop] = useState('dark');
 
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -1347,11 +1527,37 @@ function App() {
     return getPreviewSrcByResult(result);
   }, [result]);
 
+  const hasPreviewAsset = Boolean(previewSrc);
   const hasSuccessResult = status === 'success' && Boolean(previewSrc);
   const hasRetry = status === 'error' && typeof retryActionRef.current === 'function';
   const generateCreditCost = getCreditCost('generate', quality);
   const editCreditCost = getCreditCost('edit', quality);
   const isAuthenticated = authStatus === 'authenticated' && Boolean(currentUser);
+  const hasProgressOverlay =
+    status === 'loading' && (loadingMode === 'generate' || loadingMode === 'edit');
+  const activeLoadingStep = getActiveLoadingStep(loadingMode, loadingProgress);
+
+  useEffect(() => {
+    if (status !== 'loading' || (loadingMode !== 'generate' && loadingMode !== 'edit')) {
+      setLoadingProgress(0);
+      return undefined;
+    }
+
+    setLoadingProgress(6);
+
+    const intervalId = window.setInterval(() => {
+      setLoadingProgress((current) => {
+        const start = current < 6 ? 6 : current;
+        const remaining = 96 - start;
+        const increment = Math.max(1.2, remaining * (Math.random() * 0.12 + 0.05));
+        return Number(Math.min(96, start + increment).toFixed(1));
+      });
+    }, 520);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [loadingMode, status]);
 
   function updateStyleParam(key, value) {
     setStyleParams((prev) => ({
@@ -1373,7 +1579,15 @@ function App() {
     setStatus('idle');
     setStatusMessage('准备就绪，可以开始生成或编辑。');
     setResult(EMPTY_RESULT);
+    setLoadingProgress(0);
     retryActionRef.current = null;
+  }
+
+  function beginLoading(nextMode, message) {
+    setLoadingMode(nextMode);
+    setLoadingProgress(6);
+    setStatus('loading');
+    setStatusMessage(message);
   }
 
   function updateAuthField(key, value) {
@@ -1554,12 +1768,11 @@ function App() {
 
   async function runGenerate(payload) {
     setIsSubmitting(true);
-    setStatus('loading');
-    setStatusMessage('已收到请求，正在生成 SVG...');
-    setResult(EMPTY_RESULT);
+    beginLoading('generate', '已收到请求，正在生成 SVG...');
 
     try {
       const { result: nextResult, credits: nextCredits } = await generateSvg(payload);
+      setLoadingProgress(100);
       setResult(nextResult);
       setStatus('success');
       setStatusMessage('生成完成。');
@@ -1574,12 +1787,11 @@ function App() {
 
   async function runEdit(payload) {
     setIsSubmitting(true);
-    setStatus('loading');
-    setStatusMessage('已收到请求，正在执行编辑...');
-    setResult(EMPTY_RESULT);
+    beginLoading('edit', '已收到请求，正在执行编辑...');
 
     try {
       const { result: nextResult, credits: nextCredits } = await editSvg(payload);
+      setLoadingProgress(100);
       setResult(nextResult);
       setStatus('success');
       setStatusMessage('编辑完成。');
@@ -1603,8 +1815,10 @@ function App() {
     }
 
     if (authStatus === 'loading') {
+      setLoadingMode('auth');
       setStatus('loading');
       setStatusMessage('正在检查登录状态，请稍后...');
+      setLoadingProgress(0);
       retryActionRef.current = null;
       return;
     }
@@ -1648,8 +1862,10 @@ function App() {
     }
 
     if (authStatus === 'loading') {
+      setLoadingMode('auth');
       setStatus('loading');
       setStatusMessage('正在检查登录状态，请稍后...');
+      setLoadingProgress(0);
       retryActionRef.current = null;
       return;
     }
@@ -2021,10 +2237,16 @@ function App() {
 
                     <div
                       className={`preview-canvas state-${status} ${
-                        hasSuccessResult ? `preview-bg-${previewBackdrop}` : ''
+                        hasPreviewAsset ? `preview-bg-${previewBackdrop}` : ''
                       }`}
                     >
-                      {status === 'idle' ? (
+                      {hasPreviewAsset ? (
+                        <div className={`result-view ${status === 'success' ? '' : 'is-muted'}`}>
+                          <img src={previewSrc} alt="生成结果" />
+                        </div>
+                      ) : null}
+
+                      {status === 'idle' && !hasPreviewAsset ? (
                         <div className="status-view">
                           <PlaceholderIcon />
                           <p>还没有结果</p>
@@ -2033,35 +2255,54 @@ function App() {
                       ) : null}
 
                       {status === 'loading' ? (
-                        <div className="status-view">
-                          <div className="spinner" />
-                          <p>{statusMessage || '已收到请求，正在处理中...'}</p>
+                        <div className={`canvas-overlay ${hasPreviewAsset ? 'has-preview' : ''}`}>
+                          {hasProgressOverlay ? (
+                            <div className="loading-panel">
+                              <div className="loading-panel-topline">
+                                <span>{loadingMode === 'edit' ? '正在编辑' : '正在生成'}</span>
+                                <strong>{Math.round(loadingProgress)}%</strong>
+                              </div>
+                              <div className="loading-progress-track" aria-hidden="true">
+                                <span
+                                  className="loading-progress-fill"
+                                  style={{ width: `${loadingProgress}%` }}
+                                />
+                              </div>
+                              <p>{statusMessage || '已收到请求，正在处理中...'}</p>
+                              <small>{activeLoadingStep.title} · {activeLoadingStep.detail}</small>
+                              {hasPreviewAsset ? (
+                                <div className="loading-retain-note">当前保留上一版预览，方便继续对比。</div>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <div className="status-view compact">
+                              <div className="spinner" />
+                              <p>{statusMessage || '已收到请求，正在处理中...'}</p>
+                            </div>
+                          )}
                         </div>
                       ) : null}
 
                       {status === 'error' ? (
-                        <div className="status-view error">
-                          <p>{statusMessage}</p>
-                          {hasRetry ? (
-                            <button
-                              type="button"
-                              className="retry-button"
-                              onClick={handleRetry}
-                              disabled={isSubmitting}
-                            >
-                              重试
-                            </button>
-                          ) : null}
+                        <div className={`canvas-overlay ${hasPreviewAsset ? 'has-preview' : ''}`}>
+                          <div className={`status-view error ${hasPreviewAsset ? 'compact' : ''}`}>
+                            <p>{statusMessage}</p>
+                            {hasPreviewAsset ? <small>上一版结果已保留，可继续检查或重新发起。</small> : null}
+                            {hasRetry ? (
+                              <button
+                                type="button"
+                                className="retry-button"
+                                onClick={handleRetry}
+                                disabled={isSubmitting}
+                              >
+                                重试
+                              </button>
+                            ) : null}
+                          </div>
                         </div>
                       ) : null}
 
-                      {status === 'success' ? (
-                        <div className="result-view">
-                          {previewSrc ? <img src={previewSrc} alt="生成结果" /> : null}
-                        </div>
-                      ) : null}
-
-                      {hasSuccessResult ? (
+                      {hasPreviewAsset ? (
                         <div className="preview-bg-toggle" role="group" aria-label="预览背景切换">
                           <button
                             type="button"
