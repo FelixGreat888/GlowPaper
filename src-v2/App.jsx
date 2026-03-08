@@ -57,121 +57,141 @@ const EMPTY_RESULT = {
 };
 
 const INSUFFICIENT_CREDITS_MESSAGE = '算粒不足，请联系佐糖团队充值';
-const TRUST_ITEMS = [
-  { value: '单次输出', label: '每次生成 1 张成品，更适合快速确认方向' },
-  { value: '50 条历史', label: '最近记录自动缓存，方便回看与复用' },
-  { value: '双格式下载', label: '生成后可直接下载 SVG 与 PNG' },
-  { value: '透明底预览', label: '黑底 / 白底切换，深色素材也能看清效果' },
-];
 const SHOWCASE_ITEMS = [
   {
     title: '整组主视觉',
     kicker: '完整构图',
     src: '/showcase/showcase-02.svg',
+    prompt: '月亮、猫和狗、花朵，少色线稿，夜晚氛围，适合整组主视觉',
     accent: 'rgba(255, 174, 94, 0.2)',
   },
   {
     title: '少色线稿套组',
     kicker: '线稿少色',
     src: '/showcase/showcase-03.svg',
+    prompt: '植物花卉组合，蓝黄少色，干净线条，适合整套贴纸与点缀素材',
     accent: 'rgba(117, 179, 255, 0.2)',
   },
   {
     title: '拟真插画风',
     kicker: '厚涂质感',
     src: '/showcase/showcase-05.svg',
+    prompt: '复古绘本感动物插画，色彩柔和，保留细节层次，适合主画面呈现',
     accent: 'rgba(255, 152, 102, 0.2)',
   },
   {
     title: '城市节庆套组',
     kicker: '伦敦主题',
     src: '/showcase/showcase-06.svg',
+    prompt: '伦敦眼、烟花、塔桥、月亮，夜晚节庆风格，网格排布的城市主题素材',
     accent: 'rgba(111, 166, 255, 0.22)',
   },
   {
     title: '元素拆分素材',
     kicker: '四宫格',
     src: '/showcase/showcase-01.svg',
+    prompt: '把主题拆成可组合元素，适合主图、角标、贴纸和延展物料重复使用',
     accent: 'rgba(255, 196, 91, 0.18)',
   },
   {
     title: '宠物贴纸风',
     kicker: '扁平可爱',
     src: '/showcase/showcase-04.svg',
+    prompt: '可爱宠物形象，轮廓清晰、构图完整，适合做贴纸和衍生小物',
     accent: 'rgba(255, 134, 134, 0.16)',
   },
   {
     title: '城市线稿组合',
     kicker: '活动素材',
     src: '/showcase/showcase-07.svg',
+    prompt: '城市主题线稿素材，可用于节点活动、包装点缀和整组视觉延展',
     accent: 'rgba(126, 174, 255, 0.18)',
   },
   {
     title: '礼赠氛围元素',
     kicker: '节庆组合',
     src: '/showcase/showcase-08.svg',
+    prompt: '节庆礼赠元素组合，适合详情页点缀、鼠标垫排版与包装辅助图形',
     accent: 'rgba(255, 184, 120, 0.16)',
   },
 ];
-const WORKFLOW_STEPS = [
-  {
-    index: '01',
-    title: '输入你想要的画面内容',
-    description: '直接用中文描述主题、元素和风格方向，先快速生成一版可编辑结果。',
-  },
-  {
-    index: '02',
-    title: '调整参数，快速试不同风格',
-    description: '风格、配色、复杂度和构图都能直接切换，悬停还能先看示意效果。',
-  },
-  {
-    index: '03',
-    title: '满意就下载，不满意继续编辑',
-    description: '生成结果可以直接带入编辑页继续调整，SVG / PNG 都能衔接下一步工作。',
-  },
+const WORKBENCH_BADGES = [
+  { label: '一句话生成图像', icon: '✨', className: 'fb-1' },
+  { label: '悬停预览风格示意', icon: '👁️', className: 'fb-2' },
+  { label: '专业参数即时切换', icon: '🎛️', className: 'fb-3' },
+  { label: 'SVG / PNG 双格式导出', icon: '⬇️', className: 'fb-4' },
 ];
-const FEATURE_ITEMS = [
+const HISTORY_PREVIEW_ITEMS = [
+  { src: '/showcase/showcase-02.svg', tone: 'light' },
+  { src: '/showcase/showcase-06.svg', tone: 'dark' },
+  { src: '/showcase/showcase-07.svg', tone: 'light' },
+  { src: '/showcase/showcase-03.svg', tone: 'dark' },
+  { src: '/showcase/showcase-08.svg', tone: 'light' },
+  { src: '/showcase/showcase-01.svg', tone: 'dark' },
+];
+const CAPABILITY_ITEMS = [
   {
-    title: '生成和编辑集中在一个页面',
-    description: '从第一次出图到继续修改，都不需要来回切换页面。',
-  },
-  {
-    title: '参数说明更容易看懂',
-    description: '常用风格参数集中展示，质量、背景和比例也都放在同一处设置。',
-  },
-  {
-    title: '悬停就能看效果示意',
-    description: '不用只看名字猜风格，能更快判断是不是你想要的效果。',
+    title: '生成和编辑集于一面',
+    accent: '#c084fc',
+    visual: 'workspace',
+    image: '/showcase/showcase-06.svg',
+    paragraphs: [
+      '从第一次出图到继续修改，都留在同一个工作区里完成，不需要反复切页找入口。',
+      '常用参数集中展示，风格方向、构图方式和质量设置都能顺手完成，节奏更连贯。',
+    ],
   },
   {
     title: '透明底素材也能清楚检查',
-    description: '预览画布支持黑底和白底切换，深色元素不会看不清。',
+    accent: '#60a5fa',
+    visual: 'preview',
+    image: '/showcase/showcase-03.svg',
+    paragraphs: [
+      '预览画布支持黑底和白底切换，深色元素放在透明底上也能看清轮廓和层次。',
+      '参数支持悬停查看示意效果，不再只能靠选项名字猜风格，更容易快速筛掉不合适的方向。',
+    ],
   },
   {
-    title: '历史记录自动保存在浏览器',
-    description: '最近 50 条生成和编辑结果会自动缓存，方便回看与复用。',
-  },
-  {
-    title: '下载与交付更直接',
-    description: 'SVG 适合继续编辑，PNG 适合预览确认，两种格式都能直接拿走。',
+    title: '历史记录自动保存与一键交付',
+    accent: '#f472b6',
+    visual: 'history',
+    image: '/showcase/showcase-02.svg',
+    secondaryImage: '/showcase/showcase-07.svg',
+    paragraphs: [
+      '最近 50 条生成和编辑记录会自动保存在浏览器里，随时回看之前的灵感和方案。',
+      'SVG 适合继续源文件编辑，PNG 适合直接确认和交付，两种格式都能一键下载带走。',
+    ],
   },
 ];
-const SCENARIO_ITEMS = [
+const USECASE_ITEMS = [
   {
-    title: '电子烟系列主题',
-    description: '节日、城市、口味、联名四类主题，可以快速试多个方向。',
+    icon: '👕',
+    title: 'POD 衍生品定制',
+    description: 'T 恤、帆布袋、马克杯等周边图案可以直接生成 SVG，放大缩小都不损失清晰度。',
   },
   {
-    title: '鼠标垫视觉延展',
-    description: '适合做平铺图案、中心主图或一组可拼合的小元素。',
+    icon: '📦',
+    title: '包装与印刷物料',
+    description: '线稿、少色和透明底素材更适合继续进入 Illustrator 等设计软件做印刷排版。',
   },
   {
-    title: '电商活动素材',
-    description: '限时活动、节庆节点、站内 banner 和详情页点缀都能复用。',
+    icon: '🎯',
+    title: '品牌图形与标识探索',
+    description: '一句话快速尝试多个方向，适合前期寻找 Logo 辅助图形和品牌插图的感觉。',
   },
   {
-    title: '印刷与包装前稿',
-    description: '少色、线稿、透明底素材更方便继续进入印刷或包装设计流程。',
+    icon: '📊',
+    title: '汇报与信息展示',
+    description: '适合给 PPT、商业提案和内部方案配图，用更统一的矢量视觉提升整体完成度。',
+  },
+  {
+    icon: '📱',
+    title: 'UI / Web 图标素材',
+    description: '可以快速产出成套元素和图标方向，帮助前端页面、活动页和产品视觉更快落地。',
+  },
+  {
+    icon: '🛒',
+    title: '电商活动与营销视觉',
+    description: '节点活动、详情页点缀、站内 banner 和专题页主视觉，都能先快速生成一版试方向。',
   },
 ];
 
@@ -397,13 +417,16 @@ function PillSelect({ label, value, options, onChange, compact = false }) {
   return (
     <label className={`pill-field ${compact ? 'compact' : ''}`}>
       <span>{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <div className="pill-select-shell">
+        <select className="pill-select-input" value={value} onChange={(event) => onChange(event.target.value)}>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <ChevronIcon />
+      </div>
     </label>
   );
 }
@@ -823,104 +846,125 @@ function ParamsModal({
   );
 }
 
-function LandingSectionHeader({ eyebrow, title, description }) {
+function LandingSectionHeader({ icon, eyebrow, title, description }) {
   return (
     <div className="landing-section-header">
-      <span className="section-eyebrow">{eyebrow}</span>
+      <span className="section-eyebrow">
+        {icon ? <i>{icon}</i> : null}
+        {eyebrow}
+      </span>
       <h2>{title}</h2>
       <p>{description}</p>
     </div>
   );
 }
 
-function AuthWorkbenchGate({
+function AuthDialog({
+  open,
   mode,
   form,
   error,
-  configured,
   submitting,
+  onClose,
   onModeChange,
   onFieldChange,
   onSubmit,
 }) {
+  if (!open) {
+    return null;
+  }
+
   return (
-    <div className="auth-gate">
-      <div className="auth-gate-copy">
-        <span className="section-eyebrow">登录后使用</span>
-        <h2>登录后即可开始生成和编辑 SVG</h2>
-        <p>
-          首次注册需要邀请码。注册成功后会自动获赠 10 算粒，后续生成和编辑都会从当前账号余额里扣减。
-        </p>
-      </div>
-
-      <div className="auth-gate-card">
-        <div className="auth-mode-switch" role="tablist" aria-label="登录注册切换">
-          <button
-            type="button"
-            className={mode === 'login' ? 'active' : ''}
-            onClick={() => onModeChange('login')}
-          >
-            登录
+    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+      <div
+        className="access-modal auth-dialog-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="登录或注册"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header>
+          <div>
+            <h3>{mode === 'login' ? '登录' : '注册'}</h3>
+          </div>
+          <button type="button" onClick={onClose} aria-label="关闭弹窗">
+            ×
           </button>
-          <button
-            type="button"
-            className={mode === 'register' ? 'active' : ''}
-            onClick={() => onModeChange('register')}
-          >
-            注册
-          </button>
-        </div>
+        </header>
 
-        <div className="auth-form-grid">
-          <label>
-            <span>邮箱</span>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(event) => onFieldChange('email', event.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-            />
-          </label>
+        <div className="access-modal-body auth-dialog-body">
+          {mode === 'register' ? <p>注册需要邀请码，新用户注册自动获赠10算粒</p> : null}
 
-          <label>
-            <span>密码</span>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(event) => onFieldChange('password', event.target.value)}
-              placeholder="至少 6 位"
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            />
-          </label>
+          <div className="auth-mode-switch" role="tablist" aria-label="登录注册切换">
+            <button
+              type="button"
+              className={mode === 'login' ? 'active' : ''}
+              onClick={() => onModeChange('login')}
+            >
+              登录
+            </button>
+            <button
+              type="button"
+              className={mode === 'register' ? 'active' : ''}
+              onClick={() => onModeChange('register')}
+            >
+              注册
+            </button>
+          </div>
 
-          {mode === 'register' ? (
-            <label className="auth-form-wide">
-              <span>邀请码</span>
+          <div className="auth-form-grid">
+            <label>
+              <span>邮箱</span>
               <input
-                type="text"
-                value={form.inviteCode}
-                onChange={(event) => onFieldChange('inviteCode', event.target.value)}
-                placeholder="请输入邀请码"
-                autoComplete="off"
+                type="email"
+                value={form.email}
+                onChange={(event) => onFieldChange('email', event.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
               />
             </label>
-          ) : null}
+
+            <label>
+              <span>密码</span>
+              <input
+                type="password"
+                value={form.password}
+                onChange={(event) => onFieldChange('password', event.target.value)}
+                placeholder="至少 6 位"
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              />
+            </label>
+
+            {mode === 'register' ? (
+              <label className="auth-form-wide">
+                <span>邀请码</span>
+                <input
+                  type="text"
+                  value={form.inviteCode}
+                  onChange={(event) => onFieldChange('inviteCode', event.target.value)}
+                  placeholder="请输入邀请码"
+                  autoComplete="off"
+                />
+              </label>
+            ) : null}
+          </div>
+
+          {error ? <div className="auth-inline-error">{error}</div> : null}
         </div>
 
-        {!configured ? (
-          <div className="auth-inline-hint">服务端尚未完成配置，暂时不能登录或注册。</div>
-        ) : null}
-        {error ? <div className="auth-inline-error">{error}</div> : null}
-
-        <button
-          type="button"
-          className="auth-submit-button"
-          onClick={onSubmit}
-          disabled={submitting || !configured}
-        >
-          {submitting ? '提交中...' : mode === 'login' ? '登录并进入工作台' : '注册并开始使用'}
-        </button>
+        <div className="access-modal-actions">
+          <button type="button" className="access-secondary-button" onClick={onClose}>
+            稍后再说
+          </button>
+          <button
+            type="button"
+            className="access-primary-button"
+            onClick={onSubmit}
+            disabled={submitting}
+          >
+            {submitting ? '提交中...' : mode === 'login' ? '登录并继续' : '注册并继续'}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -934,6 +978,10 @@ function ShowcaseCard({ item }) {
     >
       <div className="showcase-art">
         <img src={item.src} alt={item.title} loading="lazy" />
+        <div className="showcase-overlay">
+          <span className="showcase-tag"># {item.title}</span>
+          <p>{item.prompt}</p>
+        </div>
       </div>
       <div className="showcase-copy">
         <span>{item.kicker}</span>
@@ -943,48 +991,242 @@ function ShowcaseCard({ item }) {
   );
 }
 
-function WorkflowVisual() {
+function FerrisWheelSketch() {
   return (
-    <div className="workflow-visual">
-      <div className="workflow-visual-header">
-        <span>流光工作台</span>
-        <div className="workflow-visual-pills">
-          <i />
-          <i />
-          <i />
+    <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+      <g stroke="#0B4DA5" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="100" cy="76" r="46" />
+        <circle cx="100" cy="76" r="8" fill="#F8F8FF" />
+        <path d="M100 30v92M54 76h92M67 43l66 66M67 109l66-66" opacity="0.9" />
+        <path d="M70 124 100 84l30 40M84 124h32M42 132h116" />
+        <path d="M54 145c14-4 29-4 43 0M107 145c14-4 28-4 41 0" stroke="#1786FF" />
+      </g>
+      {[38, 58, 82, 118, 142, 162].map((x, index) => (
+        <circle
+          key={x}
+          cx={x}
+          cy={index < 3 ? 48 + index * 16 : 48 + (index - 3) * 16}
+          r="6"
+          fill="#CFE6FF"
+        />
+      ))}
+      <circle cx="100" cy="76" r="10" fill="#FF9E58" stroke="#0B4DA5" strokeWidth="4" />
+    </svg>
+  );
+}
+
+function FireworksSketch() {
+  return (
+    <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+      <g strokeLinecap="round">
+        <g stroke="#FF7A3D" strokeWidth="5">
+          <path d="M98 54 98 16M98 54 77 27M98 54 58 40M98 54 66 68M98 54 79 93M98 54 98 98M98 54 120 88M98 54 136 72M98 54 144 48M98 54 126 22" />
+        </g>
+        <g stroke="#FFD84E" strokeWidth="4.5">
+          <path d="M152 78 152 49M152 78 131 58M152 78 122 82M152 78 131 101M152 78 152 109M152 78 174 98M152 78 182 78M152 78 173 58" />
+        </g>
+        <g stroke="#64B8FF" strokeWidth="4">
+          <path d="M56 98 56 74M56 98 40 82M56 98 34 101M56 98 40 116M56 98 56 123M56 98 73 115M56 98 78 98M56 98 72 82" />
+        </g>
+      </g>
+      <circle cx="98" cy="54" r="6" fill="#FFF3E8" />
+      <circle cx="152" cy="78" r="5.5" fill="#FFF7D4" />
+      <circle cx="56" cy="98" r="4.5" fill="#E6F4FF" />
+    </svg>
+  );
+}
+
+function BridgeSketch() {
+  return (
+    <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+      <g stroke="#0C4C9F" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M40 124V62h28v62M132 124V62h28v62" />
+        <path d="M40 124h120M56 62l7-14h14l5 14M146 62l7-14h14l5 14" stroke="#FF9E58" />
+        <path d="M54 124V88h22v36M124 124V88h22v36" />
+        <path d="M72 124V83h56v41" />
+        <path d="M72 92c10-18 24-30 28-30 4 0 19 12 28 30" />
+        <path d="M32 142c18-5 36-5 54 0M93 142c15-5 31-5 48 0M148 142c8-3 16-3 24 0" stroke="#1786FF" />
+      </g>
+      <rect x="81" y="89" width="38" height="26" rx="4" fill="#F4F2F8" stroke="#0C4C9F" strokeWidth="4" />
+    </svg>
+  );
+}
+
+function MoonSketch() {
+  return (
+    <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+      <path
+        d="M104 30c17 8 28 24 29 44-11 8-24 12-39 12-16 0-29-6-40-18 2-18 12-32 29-40 8-4 14-5 21-5Z"
+        fill="#F8D94A"
+        stroke="#0D295F"
+        strokeWidth="5"
+        strokeLinejoin="round"
+      />
+      <path d="M110 26c5 10 8 19 8 29 0 27-19 45-50 46" fill="#F8D94A" />
+      <path d="M114 28c5 9 7 18 7 28 0 24-17 40-44 43" stroke="#0D295F" strokeWidth="5" strokeLinecap="round" />
+      <g stroke="#0D4B9C" strokeLinecap="round" strokeLinejoin="round">
+        <g transform="translate(147 60)">
+          <path d="M0-18V18M-18 0H18M-10-10 10 10M10-10-10 10" strokeWidth="5" />
+          <circle cx="0" cy="0" r="6.5" fill="#FFD253" strokeWidth="4.2" />
+        </g>
+        <g transform="translate(132 101)">
+          <path d="M0-10V10M-10 0H10M-6-6 6 6M6-6-6 6" strokeWidth="4" />
+          <circle cx="0" cy="0" r="3.8" fill="#FFE58A" strokeWidth="3.2" />
+        </g>
+        <g transform="translate(58 95)">
+          <path d="M0-13V13M-13 0H13M-7-7 7 7M7-7-7 7" strokeWidth="4.6" />
+          <circle cx="0" cy="0" r="4.8" fill="#FFD253" strokeWidth="3.6" />
+        </g>
+        <g transform="translate(76 58)">
+          <path d="M0-7V7M-7 0H7" strokeWidth="3.6" />
+          <circle cx="0" cy="0" r="2.8" fill="#FFE58A" strokeWidth="2.8" />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+function WorkbenchIllustration() {
+  return (
+    <div className="showcase-artboard">
+      <div className="showcase-artboard-grid">
+        <div className="showcase-material-tile tone-deep">
+          <FerrisWheelSketch />
+        </div>
+        <div className="showcase-material-tile tone-slate">
+          <FireworksSketch />
+        </div>
+        <div className="showcase-material-tile tone-deep">
+          <BridgeSketch />
+        </div>
+        <div className="showcase-material-tile tone-slate">
+          <MoonSketch />
         </div>
       </div>
+    </div>
+  );
+}
 
-      <div className="workflow-visual-body">
-        <div className="workflow-visual-main">
-          <div className="workflow-visual-stage">
-            <OptionPreviewArtwork fieldKey="composition" value="objects_in_grid" />
+function WorkbenchShowcase() {
+  return (
+    <div className="showcase-wrapper">
+      <div className="showcase-inner">
+        <div className="mac-bar">
+          <div className="mac-dot r" />
+          <div className="mac-dot y" />
+          <div className="mac-dot g" />
+          <span>流光工作台</span>
+        </div>
+        <div className="showcase-body">
+          <div className="showcase-screen-card">
+            <div className="showcase-screen-copy">
+              <small>实时预览 / 参数联动</small>
+              <strong>生成、编辑、预览和下载都在一个页面里完成</strong>
+            </div>
+            <div className="showcase-screen-art">
+              <WorkbenchIllustration />
+            </div>
+          </div>
+          {WORKBENCH_BADGES.map((badge) => (
+            <div key={badge.label} className={`floating-badge ${badge.className}`}>
+              <span>{badge.icon}</span>
+              {badge.label}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CapabilityVisual({ item }) {
+  if (item.visual === 'preview') {
+    return (
+      <div className="zigzag-image visual-preview">
+        <div className="visual-preview-split">
+          <div className="visual-preview-half dark">
+            <img src={item.image} alt={item.title} />
+          </div>
+          <div className="visual-preview-half light">
+            <img src={item.image} alt={item.title} />
           </div>
         </div>
+        <div className="visual-preview-switch">
+          <i className="dark" />
+          <i className="light" />
+        </div>
+      </div>
+    );
+  }
 
-        <div className="workflow-visual-side">
-          <div className="workflow-side-card">
-            <strong>生成参数</strong>
-            <ul>
-              <li>线稿</li>
-              <li>少色</li>
-              <li>插画级</li>
-              <li>网格排布</li>
-            </ul>
+  if (item.visual === 'history') {
+    return (
+      <div className="zigzag-image visual-history">
+        <div className="visual-history-grid">
+          {HISTORY_PREVIEW_ITEMS.map((preview, index) => (
+            <article
+              key={`${preview.src}-${index}`}
+              className={`visual-history-tile ${preview.tone === 'light' ? 'tone-light' : 'tone-dark'}`}
+            >
+              <img src={preview.src} alt={`${item.title} 示例 ${index + 1}`} />
+            </article>
+          ))}
+        </div>
+        <div className="visual-history-chips">
+          <span>下载 SVG</span>
+          <span>下载 PNG</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="zigzag-image visual-workspace">
+      <div className="visual-workspace-shell">
+        <div className="visual-workspace-head">
+          <span>同页完成</span>
+          <div>
+            <i />
+            <i />
+            <i />
           </div>
-          <div className="workflow-side-card">
-            <strong>交付结果</strong>
-            <p>SVG 源文件 + PNG 预览图</p>
-          </div>
-          <div className="workflow-side-card chips">
+        </div>
+        <div className="visual-workspace-body">
+          <div className="visual-workspace-copy">
             <span>生成</span>
             <span>编辑</span>
-            <span>历史</span>
-            <span>透明底检查</span>
+            <span>交付</span>
+          </div>
+          <div className="visual-workspace-art">
+            <img src={item.image} alt={item.title} />
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function CapabilityRow({ item, reverse = false }) {
+  return (
+    <div className={`zigzag-row ${reverse ? 'reverse' : ''}`}>
+      <div className="zigzag-text">
+        <h3 style={{ color: item.accent }}>{item.title}</h3>
+        {item.paragraphs.map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
+      </div>
+      <CapabilityVisual item={item} />
+    </div>
+  );
+}
+
+function UsecaseCard({ item }) {
+  return (
+    <article className="usecase-card">
+      <div className="icon-box">{item.icon}</div>
+      <h3 className="uc-title">{item.title}</h3>
+      <p className="uc-desc">{item.description}</p>
+    </article>
   );
 }
 
@@ -1006,6 +1248,7 @@ function App() {
   const [authConfigured, setAuthConfigured] = useState(true);
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
 
   const [generatePrompt, setGeneratePrompt] = useState('');
   const [editPrompt, setEditPrompt] = useState('');
@@ -1034,6 +1277,7 @@ function App() {
 
   const retryActionRef = useRef(null);
   const lastStudioTabRef = useRef(GLOWPAPER_CONFIG.defaults.tab);
+  const pendingProtectedActionRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -1139,10 +1383,27 @@ function App() {
     }));
   }
 
-  function resetAuthForm(nextMode) {
+  function setNextAuthMode(nextMode) {
     setAuthMode(nextMode);
     setAuthError('');
-    setAuthForm(AUTH_FORM_INITIAL_STATE);
+  }
+
+  function openAuthDialog(nextMode = 'login', pendingAction = null) {
+    if (pendingAction) {
+      pendingProtectedActionRef.current = pendingAction;
+    }
+    setNextAuthMode(nextMode);
+    setAuthDialogOpen(true);
+  }
+
+  function closeAuthDialog() {
+    if (authSubmitting) {
+      return;
+    }
+
+    pendingProtectedActionRef.current = null;
+    setAuthError('');
+    setAuthDialogOpen(false);
   }
 
   async function handleAuthSubmit() {
@@ -1170,8 +1431,17 @@ function App() {
       setAuthStatus(payload?.authenticated ? 'authenticated' : 'guest');
       updateCredits(payload?.creditBalance ?? null);
       setAuthForm(AUTH_FORM_INITIAL_STATE);
+      setAuthDialogOpen(false);
       setHistoryOpen(false);
       resetPreviewState();
+
+      const pendingAction = pendingProtectedActionRef.current;
+      pendingProtectedActionRef.current = null;
+      if (typeof pendingAction === 'function') {
+        window.setTimeout(() => {
+          void pendingAction();
+        }, 0);
+      }
     } catch (error) {
       setAuthError(toReadableError(error));
 
@@ -1196,6 +1466,7 @@ function App() {
     setCurrentUser(null);
     updateCredits(null);
     setAuthError('');
+    setAuthDialogOpen(false);
     setHistoryOpen(false);
     resetPreviewState();
   }
@@ -1237,6 +1508,9 @@ function App() {
       updateCredits(null);
       if (isAccountDisabledError(error)) {
         setAuthError('账号已被停用，请联系管理员。');
+      } else {
+        setAuthError('请先登录后再继续。');
+        setAuthDialogOpen(true);
       }
     }
 
@@ -1328,6 +1602,18 @@ function App() {
       return;
     }
 
+    if (authStatus === 'loading') {
+      setStatus('loading');
+      setStatusMessage('正在检查登录状态，请稍后...');
+      retryActionRef.current = null;
+      return;
+    }
+
+    if (!isAuthenticated) {
+      openAuthDialog('login', handleGenerate);
+      return;
+    }
+
     const prompt = generatePrompt.trim();
     if (!prompt) {
       setStatus('error');
@@ -1358,6 +1644,18 @@ function App() {
 
   async function handleEdit() {
     if (isSubmitting) {
+      return;
+    }
+
+    if (authStatus === 'loading') {
+      setStatus('loading');
+      setStatusMessage('正在检查登录状态，请稍后...');
+      retryActionRef.current = null;
+      return;
+    }
+
+    if (!isAuthenticated) {
+      openAuthDialog('login', handleEdit);
       return;
     }
 
@@ -1517,11 +1815,7 @@ function App() {
             <button
               type="button"
               className="ghost-header-button"
-              onClick={() => {
-                document
-                  .getElementById('studio-workbench')
-                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }}
+              onClick={() => openAuthDialog('login')}
             >
               登录 / 注册
             </button>
@@ -1546,305 +1840,282 @@ function App() {
         </section>
 
         <section id="studio-workbench" className="studio-card">
-          {isAuthenticated ? (
-            <>
-              <div className="top-toolbar">
-                <div className="tab-row" role="tablist" aria-label="模式切换">
-                  {TAB_OPTIONS.map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={activeTab === tab.id}
-                      className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-                      onClick={() => handleStudioTabChange(tab.id)}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  type="button"
-                  className={`history-toggle ${historyOpen ? 'active' : ''}`}
-                  onClick={handleToggleHistory}
-                  title="历史记录"
-                >
-                  <HistoryIcon />
-                  历史记录（{historyItems.length}）
-                </button>
+          <>
+            <div className="top-toolbar">
+              <div className="tab-row" role="tablist" aria-label="模式切换">
+                {TAB_OPTIONS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === tab.id}
+                    className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+                    onClick={() => handleStudioTabChange(tab.id)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
 
-              {historyOpen ? (
-                <div className="history-panel history-panel-only">
-                  {historyItems.length ? (
-                    <div className="history-grid">
-                      {historyItems.map((record) => (
-                        <HistoryCard
-                          key={record.id}
-                          record={record}
-                          onDownloadSvg={handleHistoryDownloadSvg}
-                          onDownloadPng={handleHistoryDownloadPng}
-                          onViewParams={(nextRecord, mode = 'params') => {
-                            if (mode === 'preview') {
-                              setActiveHistoryPreview(nextRecord);
-                              return;
-                            }
+              <button
+                type="button"
+                className={`history-toggle ${historyOpen ? 'active' : ''}`}
+                onClick={handleToggleHistory}
+                title="历史记录"
+              >
+                <HistoryIcon />
+                历史记录（{historyItems.length}）
+              </button>
+            </div>
 
-                            setActiveHistoryRecord(nextRecord);
-                          }}
+            {historyOpen ? (
+              <div className="history-panel history-panel-only">
+                {historyItems.length ? (
+                  <div className="history-grid">
+                    {historyItems.map((record) => (
+                      <HistoryCard
+                        key={record.id}
+                        record={record}
+                        onDownloadSvg={handleHistoryDownloadSvg}
+                        onDownloadPng={handleHistoryDownloadPng}
+                        onViewParams={(nextRecord, mode = 'params') => {
+                          if (mode === 'preview') {
+                            setActiveHistoryPreview(nextRecord);
+                            return;
+                          }
+
+                          setActiveHistoryRecord(nextRecord);
+                        }}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="history-empty">
+                    <p>还没有历史记录。</p>
+                    <small>生成或编辑完成后，会按时间自动缓存到浏览器（最多 50 条）。</small>
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {!historyOpen && (activeTab === 'generate' || activeTab === 'edit') ? (
+              <div className="workspace-grid">
+                <section className="left-pane">
+                  {activeTab === 'generate' ? (
+                    <div className="control-block">
+                      <label className="field-title" htmlFor="generate-prompt">
+                        创作描述
+                      </label>
+                      <div className="prompt-shell">
+                        <textarea
+                          id="generate-prompt"
+                          value={generatePrompt}
+                          onChange={(event) => setGeneratePrompt(event.target.value)}
+                          placeholder={GLOWPAPER_CONFIG.generatePlaceholder}
+                          rows={6}
                         />
-                      ))}
+                        <div className="prompt-controls">
+                          <span className="credit-hint">消耗{generateCreditCost ?? '--'}算粒</span>
+                          <button
+                            type="button"
+                            className="send-button"
+                            disabled={isSubmitting}
+                            onClick={handleGenerate}
+                            title="生成"
+                          >
+                            {isSubmitting ? '...' : <SendIcon />}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ) : (
-                    <div className="history-empty">
-                      <p>还没有历史记录。</p>
-                      <small>生成或编辑完成后，会按时间自动缓存到浏览器（最多 50 条）。</small>
+                    <div className="control-block">
+                      <label className="field-title">上传素材</label>
+                      <UploadDropzone
+                        file={uploadedFile}
+                        previewUrl={uploadedPreviewUrl}
+                        onPickFile={(file) => {
+                          if (!isAcceptedImage(file)) {
+                            setStatus('error');
+                            setStatusMessage('仅支持 SVG 和 PNG 文件。');
+                            return;
+                          }
+                          setUploadedFile(file);
+                        }}
+                        onClearFile={() => setUploadedFile(null)}
+                      />
+
+                      <label className="field-title" htmlFor="edit-prompt">
+                        修改说明
+                      </label>
+                      <div className="prompt-shell">
+                        <textarea
+                          id="edit-prompt"
+                          value={editPrompt}
+                          onChange={(event) => setEditPrompt(event.target.value)}
+                          placeholder="描述你想怎么改，比如改配色、加元素、调整风格。"
+                          rows={4}
+                        />
+                        <div className="prompt-controls">
+                          <span className="credit-hint">消耗{editCreditCost ?? '--'}算粒</span>
+                          <button
+                            type="button"
+                            className="send-button edit"
+                            disabled={isSubmitting}
+                            onClick={handleEdit}
+                            title="编辑"
+                          >
+                            {isSubmitting ? '...' : <SendIcon />}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
-                </div>
-              ) : null}
 
-              {!historyOpen && (activeTab === 'generate' || activeTab === 'edit') ? (
-                <div className="workspace-grid">
-                  <section className="left-pane">
-                    {activeTab === 'generate' ? (
-                      <div className="control-block">
-                        <label className="field-title" htmlFor="generate-prompt">
-                          创作描述
-                        </label>
-                        <div className="prompt-shell">
-                          <textarea
-                            id="generate-prompt"
-                            value={generatePrompt}
-                            onChange={(event) => setGeneratePrompt(event.target.value)}
-                            placeholder={GLOWPAPER_CONFIG.generatePlaceholder}
-                            rows={6}
-                          />
-                          <div className="prompt-controls">
-                            <span className="credit-hint">消耗{generateCreditCost ?? '--'}算粒</span>
-                            <button
-                              type="button"
-                              className="send-button"
-                              disabled={isSubmitting}
-                              onClick={handleGenerate}
-                              title="生成"
-                            >
-                              {isSubmitting ? '...' : <SendIcon />}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="control-block">
-                        <label className="field-title">上传素材</label>
-                        <UploadDropzone
-                          file={uploadedFile}
-                          previewUrl={uploadedPreviewUrl}
-                          onPickFile={(file) => {
-                            if (!isAcceptedImage(file)) {
-                              setStatus('error');
-                              setStatusMessage('仅支持 SVG 和 PNG 文件。');
-                              return;
-                            }
-                            setUploadedFile(file);
-                          }}
-                          onClearFile={() => setUploadedFile(null)}
+                  <div className="control-block">
+                    <h3 className="field-title">生成参数</h3>
+                    <div className="pill-grid">
+                      {STYLE_PARAM_FIELDS.map((field, index) => (
+                        <PreviewPillSelect
+                          key={field.key}
+                          fieldKey={field.key}
+                          label={field.label}
+                          value={styleParams[field.key]}
+                          options={STYLE_PARAM_OPTIONS[field.key]}
+                          align={index % 2 === 0 ? 'left' : 'right'}
+                          onChange={(value) => updateStyleParam(field.key, value)}
                         />
-
-                        <label className="field-title" htmlFor="edit-prompt">
-                          修改说明
-                        </label>
-                        <div className="prompt-shell">
-                          <textarea
-                            id="edit-prompt"
-                            value={editPrompt}
-                            onChange={(event) => setEditPrompt(event.target.value)}
-                            placeholder="描述你想怎么改，比如改配色、加元素、调整风格。"
-                            rows={4}
-                          />
-                          <div className="prompt-controls">
-                            <span className="credit-hint">消耗{editCreditCost ?? '--'}算粒</span>
-                            <button
-                              type="button"
-                              className="send-button edit"
-                              disabled={isSubmitting}
-                              onClick={handleEdit}
-                              title="编辑"
-                            >
-                              {isSubmitting ? '...' : <SendIcon />}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="control-block">
-                      <h3 className="field-title">生成参数</h3>
-                      <div className="pill-grid">
-                        {STYLE_PARAM_FIELDS.map((field, index) => (
-                          <PreviewPillSelect
-                            key={field.key}
-                            fieldKey={field.key}
-                            label={field.label}
-                            value={styleParams[field.key]}
-                            options={STYLE_PARAM_OPTIONS[field.key]}
-                            align={index % 2 === 0 ? 'left' : 'right'}
-                            onChange={(value) => updateStyleParam(field.key, value)}
-                          />
-                        ))}
-                        <PillSelect
-                          label="质量"
-                          value={quality}
-                          options={QUALITY_OPTIONS}
-                          onChange={setQuality}
-                        />
-                        <PillSelect
-                          label="背景"
-                          value={background}
-                          options={BACKGROUND_OPTIONS}
-                          onChange={setBackground}
-                        />
-                        <PillSelect
-                          label="比例"
-                          value={aspectRatio}
-                          options={ASPECT_RATIO_OPTIONS}
-                          onChange={setAspectRatio}
-                        />
-                      </div>
+                      ))}
+                      <PillSelect
+                        label="质量"
+                        value={quality}
+                        options={QUALITY_OPTIONS}
+                        onChange={setQuality}
+                      />
+                      <PillSelect
+                        label="背景"
+                        value={background}
+                        options={BACKGROUND_OPTIONS}
+                        onChange={setBackground}
+                      />
+                      <PillSelect
+                        label="比例"
+                        value={aspectRatio}
+                        options={ASPECT_RATIO_OPTIONS}
+                        onChange={setAspectRatio}
+                      />
                     </div>
-                  </section>
+                  </div>
+                </section>
 
-                  <section className="right-pane">
-                    <div className="control-block preview-card">
-                      <div className="preview-head">
-                        <span>预览画布</span>
-                        {(status === 'success' || status === 'error' || status === 'loading') && (
-                          <button type="button" className="clear-button" onClick={resetPreviewState} title="清空结果">
-                            ×
+                <section className="right-pane">
+                  <div className="control-block preview-card">
+                    <div className="preview-head">
+                      <span>预览画布</span>
+                      {(status === 'success' || status === 'error' || status === 'loading') && (
+                        <button type="button" className="clear-button" onClick={resetPreviewState} title="清空结果">
+                          ×
+                        </button>
+                      )}
+                    </div>
+
+                    <div
+                      className={`preview-canvas state-${status} ${
+                        hasSuccessResult ? `preview-bg-${previewBackdrop}` : ''
+                      }`}
+                    >
+                      {status === 'idle' ? (
+                        <div className="status-view">
+                          <PlaceholderIcon />
+                          <p>还没有结果</p>
+                          <small>提交请求后，结果会显示在这里。</small>
+                        </div>
+                      ) : null}
+
+                      {status === 'loading' ? (
+                        <div className="status-view">
+                          <div className="spinner" />
+                          <p>{statusMessage || '已收到请求，正在处理中...'}</p>
+                        </div>
+                      ) : null}
+
+                      {status === 'error' ? (
+                        <div className="status-view error">
+                          <p>{statusMessage}</p>
+                          {hasRetry ? (
+                            <button
+                              type="button"
+                              className="retry-button"
+                              onClick={handleRetry}
+                              disabled={isSubmitting}
+                            >
+                              重试
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {status === 'success' ? (
+                        <div className="result-view">
+                          {previewSrc ? <img src={previewSrc} alt="生成结果" /> : null}
+                        </div>
+                      ) : null}
+
+                      {hasSuccessResult ? (
+                        <div className="preview-bg-toggle" role="group" aria-label="预览背景切换">
+                          <button
+                            type="button"
+                            className={`preview-bg-button ${previewBackdrop === 'dark' ? 'active' : ''}`}
+                            onClick={() => setPreviewBackdrop('dark')}
+                            title="切换到深色背景"
+                            aria-label="深色背景"
+                          >
+                            <span className="preview-bg-dot dark" />
                           </button>
-                        )}
-                      </div>
-
-                      <div
-                        className={`preview-canvas state-${status} ${
-                          hasSuccessResult ? `preview-bg-${previewBackdrop}` : ''
-                        }`}
-                      >
-                        {status === 'idle' ? (
-                          <div className="status-view">
-                            <PlaceholderIcon />
-                            <p>还没有结果</p>
-                            <small>提交请求后，结果会显示在这里。</small>
-                          </div>
-                        ) : null}
-
-                        {status === 'loading' ? (
-                          <div className="status-view">
-                            <div className="spinner" />
-                            <p>{statusMessage || '已收到请求，正在处理中...'}</p>
-                          </div>
-                        ) : null}
-
-                        {status === 'error' ? (
-                          <div className="status-view error">
-                            <p>{statusMessage}</p>
-                            {hasRetry ? (
-                              <button
-                                type="button"
-                                className="retry-button"
-                                onClick={handleRetry}
-                                disabled={isSubmitting}
-                              >
-                                重试
-                              </button>
-                            ) : null}
-                          </div>
-                        ) : null}
-
-                        {status === 'success' ? (
-                          <div className="result-view">
-                            {previewSrc ? <img src={previewSrc} alt="生成结果" /> : null}
-                          </div>
-                        ) : null}
-
-                        {hasSuccessResult ? (
-                          <div className="preview-bg-toggle" role="group" aria-label="预览背景切换">
-                            <button
-                              type="button"
-                              className={`preview-bg-button ${previewBackdrop === 'dark' ? 'active' : ''}`}
-                              onClick={() => setPreviewBackdrop('dark')}
-                              title="切换到深色背景"
-                              aria-label="深色背景"
-                            >
-                              <span className="preview-bg-dot dark" />
-                            </button>
-                            <button
-                              type="button"
-                              className={`preview-bg-button ${previewBackdrop === 'light' ? 'active' : ''}`}
-                              onClick={() => setPreviewBackdrop('light')}
-                              title="切换到白色背景"
-                              aria-label="白色背景"
-                            >
-                              <span className="preview-bg-dot light" />
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
+                          <button
+                            type="button"
+                            className={`preview-bg-button ${previewBackdrop === 'light' ? 'active' : ''}`}
+                            onClick={() => setPreviewBackdrop('light')}
+                            title="切换到白色背景"
+                            aria-label="白色背景"
+                          >
+                            <span className="preview-bg-dot light" />
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
+                  </div>
 
-                    <div className="download-row">
-                      <button
-                        type="button"
-                        className="download-button"
-                        onClick={handleDownloadSvgCurrent}
-                        disabled={!hasSuccessResult || !result.svgText}
-                      >
-                        下载 SVG
-                      </button>
-                      <button
-                        type="button"
-                        className="download-button"
-                        onClick={handleDownloadPngCurrent}
-                        disabled={!hasSuccessResult || !result.pngDataUrl}
-                      >
-                        下载 PNG
-                      </button>
-                    </div>
-                  </section>
-                </div>
-              ) : null}
-            </>
-          ) : authStatus === 'loading' ? (
-            <div className="auth-loading-state">正在准备登录环境...</div>
-          ) : (
-            <AuthWorkbenchGate
-              mode={authMode}
-              form={authForm}
-              error={authError}
-              configured={authConfigured}
-              submitting={authSubmitting}
-              onModeChange={resetAuthForm}
-              onFieldChange={updateAuthField}
-              onSubmit={handleAuthSubmit}
-            />
-          )}
+                  <div className="download-row">
+                    <button
+                      type="button"
+                      className="download-button"
+                      onClick={handleDownloadSvgCurrent}
+                      disabled={!hasSuccessResult || !result.svgText}
+                    >
+                      下载 SVG
+                    </button>
+                    <button
+                      type="button"
+                      className="download-button"
+                      onClick={handleDownloadPngCurrent}
+                      disabled={!hasSuccessResult || !result.pngDataUrl}
+                    >
+                      下载 PNG
+                    </button>
+                  </div>
+                </section>
+              </div>
+            ) : null}
+          </>
         </section>
 
-        <section className="proof-band">
-          {TRUST_ITEMS.map((item) => (
-            <article key={item.label} className="proof-item">
-              <strong>{item.value}</strong>
-              <span>{item.label}</span>
-            </article>
-          ))}
-        </section>
-
-        <section id="landing-showcase" className="landing-section">
+        <section id="landing-showcase" className="landing-section landing-gallery-section">
           <LandingSectionHeader
-            eyebrow="案例墙"
-            title="看看真实生成效果，大致就能知道适不适合你的场景"
-            description="这里展示的是实际生成结果示例，适合用来判断风格方向、元素组合和画面完成度。"
+            icon="✨"
+            eyebrow="案例画廊"
+            title="看看真实生成效果，找到你的灵感"
+            description="这里展示的都是实际生成的 SVG 样例。把鼠标移到图片上，可以快速感受题材方向和画面氛围。"
           />
           <div className="showcase-grid">
             {SHOWCASE_ITEMS.map((item) => (
@@ -1853,65 +2124,57 @@ function App() {
           </div>
         </section>
 
-        <section className="landing-section workflow-section">
+        <section className="landing-section landing-workbench-section">
           <LandingSectionHeader
-            eyebrow="工作流"
-            title="从一句描述到成品素材，常用步骤都能顺着做完"
-            description="输入需求、调整参数、预览确认、继续编辑和下载交付，都可以在同一个页面里完成。"
+            icon="⚡"
+            eyebrow="流光工作台"
+            title={
+              <>
+                从一句描述到成品素材
+                <br />
+                常用步骤顺着做完
+              </>
+            }
+            description="输入需求、调整参数、预览确认、继续编辑和下载交付，都可以在同一个沉浸式页面里闭环完成。"
           />
-
-          <div className="workflow-layout">
-            <div className="workflow-steps">
-              {WORKFLOW_STEPS.map((step) => (
-                <article key={step.index} className="workflow-step-card">
-                  <span>{step.index}</span>
-                  <h3>{step.title}</h3>
-                  <p>{step.description}</p>
-                </article>
-              ))}
-            </div>
-
-            <WorkflowVisual />
-          </div>
+          <WorkbenchShowcase />
         </section>
 
-        <section className="landing-section">
+        <section className="landing-section landing-capability-section">
           <LandingSectionHeader
+            icon="🔥"
             eyebrow="核心能力"
             title="覆盖从出图到交付的关键步骤"
-            description="把常用动作集中在一个页面里，减少切换页面和来回确认的时间。"
+            description="为素材创作和设计交付准备的高频能力，都尽量集中在一个顺手的工作区里。"
           />
-          <div className="feature-grid">
-            {FEATURE_ITEMS.map((item) => (
-              <article key={item.title} className="feature-card">
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-              </article>
+          <div className="zigzag-container">
+            {CAPABILITY_ITEMS.map((item, index) => (
+              <CapabilityRow
+                key={item.title}
+                item={item}
+                reverse={index % 2 === 1}
+              />
             ))}
           </div>
         </section>
 
-        <section className="landing-section">
+        <section className="landing-section landing-usecase-section">
           <LandingSectionHeader
+            icon="💡"
             eyebrow="适用场景"
-            title="适合这些常见素材需求"
-            description="无论是贴纸元素、活动主题图还是包装点缀，都可以先快速出一版再继续细化。"
+            title="发掘更多创意的落地可能"
+            description="无论你需要整组视觉、印刷前稿、营销素材还是图标方向，都可以先快速生成一版再继续细化。"
           />
-          <div className="scenario-grid">
-            {SCENARIO_ITEMS.map((item) => (
-              <article key={item.title} className="scenario-card">
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-              </article>
+          <div className="usecase-grid">
+            {USECASE_ITEMS.map((item) => (
+              <UsecaseCard key={item.title} item={item} />
             ))}
           </div>
         </section>
 
         <footer className="site-footer">
-          <div className="site-footer-brand">
-            <strong>{GLOWPAPER_CONFIG.brandName}</strong>
-            <span>SVG 素材创作工具，支持生成、编辑、历史缓存与透明底预览。</span>
-          </div>
+          <h2>{GLOWPAPER_CONFIG.brandName}</h2>
+          <p>面向素材创作与快速交付的 AI SVG 工作台</p>
         </footer>
       </main>
 
@@ -1927,6 +2190,17 @@ function App() {
           setCopiedPromptRecordId('');
         }}
         onCopyPrompt={handleCopyPrompt}
+      />
+      <AuthDialog
+        open={authDialogOpen}
+        mode={authMode}
+        form={authForm}
+        error={authError}
+        submitting={authSubmitting}
+        onClose={closeAuthDialog}
+        onModeChange={setNextAuthMode}
+        onFieldChange={updateAuthField}
+        onSubmit={handleAuthSubmit}
       />
     </div>
   );
