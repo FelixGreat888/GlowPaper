@@ -2383,12 +2383,11 @@ function App() {
                                 <div className="core-glow" />
                               </div>
 
-                              <div className="loading-content">
-                                <div className="loading-panel-topline">
-                                  <span>{loadingMode === 'edit' ? '编辑中' : '生成中'}</span>
-                                  <strong>{Math.round(loadingProgress)}%</strong>
-                                </div>
+                              <div className="loading-progress-value">
+                                {Math.round(loadingProgress)}%
+                              </div>
 
+                              <div className="loading-content">
                                 <div
                                   key={`${loadingMode}-${loadingStatusIndex}`}
                                   className="status-text"

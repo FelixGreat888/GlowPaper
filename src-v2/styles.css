@@ -1777,7 +1777,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 28px;
+  margin-bottom: 12px;
 }
 
 .vector-ring {
@@ -1824,23 +1824,14 @@ body {
   gap: 0;
 }
 
-.loading-panel-topline {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 14px;
-  width: 100%;
-  margin-bottom: 14px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.loading-panel-topline strong {
+.loading-progress-value {
+  margin-bottom: 18px;
   color: var(--text-primary);
-  font-size: 20px;
+  font-size: 28px;
+  font-weight: 700;
   letter-spacing: -0.03em;
+  line-height: 1;
+  text-align: center;
 }
 
 .status-text {
