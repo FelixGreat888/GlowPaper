@@ -1370,7 +1370,31 @@ function extractSvgResult(payload) {
   };
 }
 
-function extractUpstreamErrorMessage(payload, status) {
+function getSvgUpstreamFallbackMessage(status, actionLabel = '生成') {
+  if (status === 400) {
+    return `${actionLabel}参数有误，请调整描述后重试`;
+  }
+
+  if (status === 401 || status === 403) {
+    return 'SVG 服务鉴权失败，请联系管理员检查配置';
+  }
+
+  if (status === 408 || status === 504) {
+    return `${actionLabel}超时，请稍后重试`;
+  }
+
+  if (status === 429) {
+    return '当前请求较多，请稍后再试';
+  }
+
+  if (status >= 500) {
+    return `素材${actionLabel}服务暂时不可用，请稍后重试`;
+  }
+
+  return `${actionLabel}失败，请稍后重试`;
+}
+
+function extractUpstreamErrorMessage(payload, status, actionLabel = '生成') {
   const nestedError = payload?.error && typeof payload.error === 'object' ? payload.error : null;
   const candidates = [
     nestedError?.message,
@@ -1381,7 +1405,11 @@ function extractUpstreamErrorMessage(payload, status) {
     findValueByKeys(payload, ['message', 'detail', 'reason']),
   ];
   const message = candidates.find((value) => typeof value === 'string' && value.trim());
-  return message || `SVG 服务请求失败（${status}）`;
+  if (message && /[\u4e00-\u9fff]/.test(message)) {
+    return message;
+  }
+
+  return getSvgUpstreamFallbackMessage(status, actionLabel);
 }
 
 function sanitizeStyleParams(rawValue = {}) {
@@ -1508,14 +1536,19 @@ async function refundCredits({ userId, amount, reason, meta }) {
 }
 
 async function callSvgGenerate(payload) {
-  const response = await fetch(`${privateConfig.svg.base_url}/generate`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': buildApiKey(privateConfig.svg.api_key),
-    },
-    body: JSON.stringify(payload),
-  });
+  let response;
+  try {
+    response = await fetch(`${privateConfig.svg.base_url}/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': buildApiKey(privateConfig.svg.api_key),
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new ApiError(502, 'SVG_UPSTREAM_UNAVAILABLE', '素材生成服务连接失败，请稍后重试');
+  }
 
   const rawText = await response.text();
   const parsed = tryParseJsonText(rawText);
@@ -1524,7 +1557,7 @@ async function callSvgGenerate(payload) {
     throw new ApiError(
       response.status >= 500 ? 502 : 400,
       'SVG_UPSTREAM_ERROR',
-      parsed ? extractUpstreamErrorMessage(parsed, response.status) : `SVG 服务请求失败（${response.status}）`,
+      extractUpstreamErrorMessage(parsed, response.status, '生成'),
     );
   }
 
@@ -1559,14 +1592,19 @@ function validateEditMultipart(buffer, contentType) {
 }
 
 async function callSvgEdit(buffer, contentType) {
-  const response = await fetch(`${privateConfig.svg.base_url}/edit`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': contentType,
-      'x-api-key': buildApiKey(privateConfig.svg.api_key),
-    },
-    body: buffer,
-  });
+  let response;
+  try {
+    response = await fetch(`${privateConfig.svg.base_url}/edit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': contentType,
+        'x-api-key': buildApiKey(privateConfig.svg.api_key),
+      },
+      body: buffer,
+    });
+  } catch {
+    throw new ApiError(502, 'SVG_UPSTREAM_UNAVAILABLE', '素材编辑服务连接失败，请稍后重试');
+  }
 
   const rawText = await response.text();
   const parsed = tryParseJsonText(rawText);
@@ -1575,7 +1613,7 @@ async function callSvgEdit(buffer, contentType) {
     throw new ApiError(
       response.status >= 500 ? 502 : 400,
       'SVG_UPSTREAM_ERROR',
-      parsed ? extractUpstreamErrorMessage(parsed, response.status) : `SVG 服务请求失败（${response.status}）`,
+      extractUpstreamErrorMessage(parsed, response.status, '编辑'),
     );
   }
 
@@ -1682,7 +1720,13 @@ async function handleSvgGenerate(request, response) {
       throw error;
     }
 
-    throw error;
+    console.error('Unexpected generate failure', error);
+    throw new ApiError(
+      502,
+      'SVG_GENERATE_FAILED',
+      refundedBalance !== null ? '生成失败，算粒已自动退回，请稍后重试' : '生成失败，请稍后重试',
+      refundedBalance !== null ? { creditBalance: refundedBalance } : {},
+    );
   }
 }
 
@@ -1730,7 +1774,13 @@ async function handleSvgEdit(request, response) {
       throw error;
     }
 
-    throw error;
+    console.error('Unexpected edit failure', error);
+    throw new ApiError(
+      502,
+      'SVG_EDIT_FAILED',
+      refundedBalance !== null ? '编辑失败，算粒已自动退回，请稍后重试' : '编辑失败，请稍后重试',
+      refundedBalance !== null ? { creditBalance: refundedBalance } : {},
+    );
   }
 }
 

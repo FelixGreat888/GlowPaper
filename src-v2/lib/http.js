@@ -74,6 +74,17 @@ function buildApiError(response, payload, raw, fallbackMessage) {
   return error;
 }
 
+function buildNetworkError(error) {
+  const isAbort = error?.name === 'AbortError';
+  const nextError = new Error(
+    isAbort ? '请求超时，请稍后重试' : '网络连接失败，请检查网络后重试',
+  );
+
+  nextError.code = isAbort ? 'REQUEST_ABORTED' : 'NETWORK_ERROR';
+  nextError.cause = error;
+  return nextError;
+}
+
 export async function requestApi(url, options = {}) {
   const headers = new Headers(options.headers || {});
   const init = {
@@ -93,7 +104,12 @@ export async function requestApi(url, options = {}) {
     init.body = JSON.stringify(init.body);
   }
 
-  const response = await fetch(url, init);
+  let response;
+  try {
+    response = await fetch(url, init);
+  } catch (error) {
+    throw buildNetworkError(error);
+  }
 
   if (response.status === 204) {
     return null;

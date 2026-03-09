@@ -27,6 +27,10 @@ import {
   loadHistory,
 } from './lib/history.js';
 import {
+  INSPIRATION_LIBRARY,
+  PROMPT_MAX_LENGTH,
+} from './lib/inspiration-library.js';
+import {
   getOptionPreviewMeta,
   OptionPreviewArtwork,
 } from './lib/option-previews.jsx';
@@ -197,55 +201,65 @@ const USECASE_ITEMS = [
 
 const LOADING_STEPS = {
   auth: [
-    { progress: 24, title: '同步账号状态', detail: '正在确认当前登录与算粒信息。' },
+    {
+      progress: 24,
+      title: '同步账号状态',
+      detail: '正在确认当前登录与算粒信息。',
+      hint: '登录成功后会自动回到当前工作台。',
+    },
   ],
   generate: [
-    { progress: 8, title: '整理提示词', detail: '正在归纳你的主题、构图和风格参数。' },
-    { progress: 34, title: '生成矢量草图', detail: '先搭好主体轮廓和基础元素关系。' },
-    { progress: 62, title: '补齐图形细节', detail: '继续完善层次、装饰和画面完整度。' },
-    { progress: 84, title: '整理交付格式', detail: '正在准备 SVG 和 PNG 预览结果。' },
+    {
+      progress: 8,
+      title: '整理提示词',
+      detail: '正在解析你的主题、构图和风格参数...',
+      hint: '提示：关键词之间用逗号分隔，模型更容易拆解主体和元素关系。',
+    },
+    {
+      progress: 34,
+      title: '生成矢量草图',
+      detail: '正在构建基础矢量骨架...',
+      hint: '技巧：如果要成套贴纸或图标，构图方式建议选择“网格排布”。',
+    },
+    {
+      progress: 62,
+      title: '补齐图形细节',
+      detail: '正在细化层次、装饰和画面完整度...',
+      hint: '提示：少色和线稿通常更适合继续进入包装、印刷和矢量二改场景。',
+    },
+    {
+      progress: 84,
+      title: '整理交付格式',
+      detail: '几乎完成了，正在输出 SVG...',
+      hint: '技巧：生成结果会同时准备 SVG 和 PNG 预览，方便直接检查和下载。',
+    },
   ],
   edit: [
-    { progress: 8, title: '分析原图结构', detail: '先识别上传素材的轮廓、层次与可编辑部分。' },
-    { progress: 36, title: '套用修改方向', detail: '根据你的编辑描述重组图形与风格。' },
-    { progress: 64, title: '细化局部变化', detail: '继续补齐细节，避免只改表面样式。' },
-    { progress: 84, title: '输出新版本', detail: '正在整理可预览、可下载的新结果。' },
+    {
+      progress: 8,
+      title: '分析原图结构',
+      detail: '正在识别上传素材的轮廓、层次与可编辑部分...',
+      hint: '提示：轮廓更清晰的 SVG 或 PNG，编辑结果通常更稳定。',
+    },
+    {
+      progress: 36,
+      title: '套用修改方向',
+      detail: '正在根据你的编辑描述重组图形与风格...',
+      hint: '技巧：先说明“保留主体”，再写修改方向，局部编辑会更准确。',
+    },
+    {
+      progress: 64,
+      title: '细化局部变化',
+      detail: '正在补齐局部变化和细节衔接...',
+      hint: '提示：少色、线稿和透明底更适合继续进印刷与包装场景。',
+    },
+    {
+      progress: 84,
+      title: '输出新版本',
+      detail: '几乎完成了，正在输出编辑结果...',
+      hint: '技巧：结果支持 SVG 和 PNG 双下载，方便直接确认和交付。',
+    },
   ],
-};
-
-const LOADING_COPY = {
-  auth: {
-    statuses: ['正在同步登录状态...'],
-    tips: ['登录成功后会自动回到当前工作台。'],
-  },
-  generate: {
-    statuses: [
-      '正在解析画面提示词...',
-      '正在构建基础矢量骨架...',
-      '匹配色彩美学与节点优化...',
-      '几乎完成了，正在输出 SVG...',
-    ],
-    tips: [
-      '提示：使用逗号分隔关键词，AI 能更精准地理解画面需求。',
-      '技巧：在风格参数里选择“线稿”，更容易得到干净的透明底素材。',
-      '提示：构图方式切到“网格排布”，更适合一整套图标或贴纸。',
-      '技巧：生成结果是 SVG，可继续在矢量软件里二次编辑。',
-    ],
-  },
-  edit: {
-    statuses: [
-      '正在分析上传素材结构...',
-      '正在重组原始矢量骨架...',
-      '匹配新的风格参数与配色...',
-      '几乎完成了，正在输出编辑结果...',
-    ],
-    tips: [
-      '提示：上传轮廓更清晰的 PNG 或 SVG，编辑结果通常更稳定。',
-      '技巧：先说明“保留主体”，再写修改方向，局部编辑会更准确。',
-      '提示：少色和线稿更适合继续进入印刷与包装场景。',
-      '技巧：结果支持 SVG 和 PNG 双下载，方便直接确认和交付。',
-    ],
-  },
 };
 
 function clampValue(value, min, max) {
@@ -263,10 +277,6 @@ function getActiveLoadingStep(mode, progress) {
   }
 
   return activeStep;
-}
-
-function getLoadingCopy(mode) {
-  return LOADING_COPY[mode] || LOADING_COPY.generate;
 }
 
 function buildLabelMap(options) {
@@ -460,6 +470,37 @@ function SendIcon() {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+function CreditCoinIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" fill="rgba(251, 191, 36, 0.14)" />
+      <path d="M12 7v10M10 10h4M10 14h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SubmitCapsule({ cost, tooltip, disabled, onClick, actionLabel }) {
+  const safeCost = cost ?? '--';
+
+  return (
+    <button
+      type="button"
+      className="submit-capsule"
+      disabled={disabled}
+      onClick={onClick}
+      title={actionLabel}
+      aria-label={`${actionLabel}，消耗 ${safeCost} 算粒`}
+    >
+      <div className="cost-display">
+        <CreditCoinIcon />
+        <span>{safeCost}</span>
+      </div>
+      <div className="submit-circle">{disabled ? <div className="submit-spinner" /> : <SendIcon />}</div>
+      <div className="cost-tooltip">{tooltip}</div>
+    </button>
   );
 }
 
@@ -1499,6 +1540,7 @@ function App() {
 
   const [generatePrompt, setGeneratePrompt] = useState('');
   const [editPrompt, setEditPrompt] = useState('');
+  const [inspirationOpen, setInspirationOpen] = useState(false);
 
   const [quality, setQuality] = useState(GLOWPAPER_CONFIG.defaults.quality);
   const [background, setBackground] = useState(GLOWPAPER_CONFIG.defaults.background);
@@ -1516,8 +1558,6 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingMode, setLoadingMode] = useState('generate');
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [loadingStatusIndex, setLoadingStatusIndex] = useState(0);
-  const [loadingTipIndex, setLoadingTipIndex] = useState(0);
   const [previewBackdrop, setPreviewBackdrop] = useState('dark');
 
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -1530,6 +1570,10 @@ function App() {
   const lastStudioTabRef = useRef(GLOWPAPER_CONFIG.defaults.tab);
   const pendingProtectedActionRef = useRef('');
   const requestVersionRef = useRef(0);
+  const generatePromptRef = useRef(null);
+  const inspirationMenuRef = useRef(null);
+  const inspirationTriggerRef = useRef(null);
+  const promptTypewriterRef = useRef(0);
 
   useEffect(() => {
     try {
@@ -1604,14 +1648,14 @@ function App() {
   const hasRetry = status === 'error' && typeof retryActionRef.current === 'function';
   const generateCreditCost = getCreditCost('generate', quality);
   const editCreditCost = getCreditCost('edit', quality);
+  const generatePromptCount = generatePrompt.length;
+  const editPromptCount = editPrompt.length;
   const isAuthenticated = authStatus === 'authenticated' && Boolean(currentUser);
   const hasProgressOverlay =
     status === 'loading' && (loadingMode === 'generate' || loadingMode === 'edit');
   const activeLoadingStep = getActiveLoadingStep(loadingMode, loadingProgress);
-  const loadingCopy = getLoadingCopy(loadingMode);
-  const loadingStatusText =
-    loadingCopy.statuses[loadingStatusIndex % loadingCopy.statuses.length] || statusMessage;
-  const loadingTipText = loadingCopy.tips[loadingTipIndex % loadingCopy.tips.length] || '';
+  const loadingStatusText = activeLoadingStep?.detail || statusMessage;
+  const loadingTipText = activeLoadingStep?.hint || '';
 
   useEffect(() => {
     if (status !== 'loading' || (loadingMode !== 'generate' && loadingMode !== 'edit')) {
@@ -1636,32 +1680,107 @@ function App() {
   }, [loadingMode, status]);
 
   useEffect(() => {
-    setLoadingStatusIndex(0);
-    setLoadingTipIndex(0);
+    return () => {
+      if (promptTypewriterRef.current) {
+        window.clearTimeout(promptTypewriterRef.current);
+      }
+    };
+  }, []);
 
-    if (!hasProgressOverlay) {
+  useEffect(() => {
+    if (activeTab === 'generate') {
       return undefined;
     }
 
-    const statusIntervalId = window.setInterval(() => {
-      setLoadingStatusIndex((current) => (current + 1) % loadingCopy.statuses.length);
-    }, 2500);
+    stopPromptTypewriter();
+    setInspirationOpen(false);
+    return undefined;
+  }, [activeTab]);
 
-    const tipIntervalId = window.setInterval(() => {
-      setLoadingTipIndex((current) => (current + 1) % loadingCopy.tips.length);
-    }, 4000);
+  useEffect(() => {
+    if (!inspirationOpen) {
+      return undefined;
+    }
+
+    function handlePointerDown(event) {
+      const clickedMenu = inspirationMenuRef.current?.contains(event.target);
+      const clickedTrigger = inspirationTriggerRef.current?.contains(event.target);
+
+      if (!clickedMenu && !clickedTrigger) {
+        setInspirationOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === 'Escape') {
+        setInspirationOpen(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
 
     return () => {
-      window.clearInterval(statusIntervalId);
-      window.clearInterval(tipIntervalId);
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
     };
-  }, [hasProgressOverlay, loadingCopy.statuses.length, loadingCopy.tips.length, loadingMode]);
+  }, [inspirationOpen]);
 
   function updateStyleParam(key, value) {
     setStyleParams((prev) => ({
       ...prev,
       [key]: value,
     }));
+  }
+
+  function stopPromptTypewriter() {
+    if (!promptTypewriterRef.current) {
+      return;
+    }
+
+    window.clearTimeout(promptTypewriterRef.current);
+    promptTypewriterRef.current = 0;
+  }
+
+  function handleGeneratePromptChange(event) {
+    stopPromptTypewriter();
+    setGeneratePrompt(event.target.value.slice(0, PROMPT_MAX_LENGTH));
+  }
+
+  function handleEditPromptChange(event) {
+    setEditPrompt(event.target.value.slice(0, PROMPT_MAX_LENGTH));
+  }
+
+  function handleSelectInspiration(promptText) {
+    const nextPrompt = String(promptText || '').slice(0, PROMPT_MAX_LENGTH);
+    stopPromptTypewriter();
+    setInspirationOpen(false);
+    setGeneratePrompt('');
+
+    if (!nextPrompt) {
+      return;
+    }
+
+    let index = 0;
+    const step = () => {
+      index += 1;
+      const partial = nextPrompt.slice(0, index);
+      setGeneratePrompt(partial);
+      window.requestAnimationFrame(() => {
+        if (generatePromptRef.current) {
+          generatePromptRef.current.scrollTop = generatePromptRef.current.scrollHeight;
+        }
+      });
+
+      if (index < nextPrompt.length) {
+        promptTypewriterRef.current = window.setTimeout(step, 16);
+        return;
+      }
+
+      promptTypewriterRef.current = 0;
+    };
+
+    step();
   }
 
   function updateCredits(value) {
@@ -1938,6 +2057,8 @@ function App() {
     if (isSubmitting) {
       return;
     }
+
+    setInspirationOpen(false);
 
     if (authStatus === 'loading') {
       setLoadingMode('auth');
@@ -2271,25 +2392,70 @@ function App() {
                       <label className="field-title" htmlFor="generate-prompt">
                         创作描述
                       </label>
-                      <div className="prompt-shell">
+                      <div className="prompt-shell prompt-shell-generate">
                         <textarea
+                          ref={generatePromptRef}
                           id="generate-prompt"
                           value={generatePrompt}
-                          onChange={(event) => setGeneratePrompt(event.target.value)}
+                          onChange={handleGeneratePromptChange}
                           placeholder={GLOWPAPER_CONFIG.generatePlaceholder}
                           rows={6}
+                          maxLength={PROMPT_MAX_LENGTH}
                         />
                         <div className="prompt-controls">
-                          <span className="credit-hint">消耗{generateCreditCost ?? '--'}算粒</span>
-                          <button
-                            type="button"
-                            className="send-button"
-                            disabled={isSubmitting}
-                            onClick={handleGenerate}
-                            title="生成"
-                          >
-                            {isSubmitting ? '...' : <SendIcon />}
-                          </button>
+                          <div className="controls-left">
+                            <button
+                              ref={inspirationTriggerRef}
+                              type="button"
+                              className="inspire-btn"
+                              onClick={() => setInspirationOpen((prev) => !prev)}
+                              aria-haspopup="dialog"
+                              aria-expanded={inspirationOpen}
+                            >
+                              <span aria-hidden="true">💡</span>
+                              灵感库
+                            </button>
+
+                            <div
+                              ref={inspirationMenuRef}
+                              className={`inspiration-dropdown ${inspirationOpen ? 'show' : ''}`}
+                            >
+                              <div className="dropdown-scroll-area">
+                                {INSPIRATION_LIBRARY.map((group) => (
+                                  <div key={group.category}>
+                                    <div className="category-title">{group.category}</div>
+                                    {group.items.map((item, index) => (
+                                      <button
+                                        key={`${group.category}-${item.name}`}
+                                        type="button"
+                                        className="dropdown-item"
+                                        onClick={() => handleSelectInspiration(item.desc)}
+                                      >
+                                        <span className="item-name">
+                                          <span className="item-index">{index + 1}.</span>
+                                          {item.name}
+                                        </span>
+                                        <span className="item-desc">{item.desc}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="controls-right">
+                            <span className="char-count">
+                              {generatePromptCount}/{PROMPT_MAX_LENGTH}
+                            </span>
+                            <SubmitCapsule
+                              cost={generateCreditCost}
+                              tooltip={`本次生成消耗 ${generateCreditCost ?? '--'} 算粒`}
+                              disabled={isSubmitting}
+                              onClick={handleGenerate}
+                              actionLabel="生成"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -2313,25 +2479,28 @@ function App() {
                       <label className="field-title" htmlFor="edit-prompt">
                         修改说明
                       </label>
-                      <div className="prompt-shell">
+                      <div className="prompt-shell prompt-shell-edit">
                         <textarea
                           id="edit-prompt"
                           value={editPrompt}
-                          onChange={(event) => setEditPrompt(event.target.value)}
+                          onChange={handleEditPromptChange}
                           placeholder="描述你想怎么改，比如改配色、加元素、调整风格。"
                           rows={4}
+                          maxLength={PROMPT_MAX_LENGTH}
                         />
-                        <div className="prompt-controls">
-                          <span className="credit-hint">消耗{editCreditCost ?? '--'}算粒</span>
-                          <button
-                            type="button"
-                            className="send-button edit"
-                            disabled={isSubmitting}
-                            onClick={handleEdit}
-                            title="编辑"
-                          >
-                            {isSubmitting ? '...' : <SendIcon />}
-                          </button>
+                        <div className="prompt-controls prompt-controls-compact">
+                          <div className="controls-right controls-right-wide">
+                            <span className="char-count">
+                              {editPromptCount}/{PROMPT_MAX_LENGTH}
+                            </span>
+                            <SubmitCapsule
+                              cost={editCreditCost}
+                              tooltip={`本次编辑消耗 ${editCreditCost ?? '--'} 算粒`}
+                              disabled={isSubmitting}
+                              onClick={handleEdit}
+                              actionLabel="编辑"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -2419,11 +2588,7 @@ function App() {
                               </div>
 
                               <div className="loading-content">
-                                <div
-                                  key={`${loadingMode}-${loadingStatusIndex}`}
-                                  className="status-text"
-                                  aria-live="polite"
-                                >
+                                <div className="status-text" aria-live="polite">
                                   {loadingStatusText}
                                 </div>
 
@@ -2436,11 +2601,11 @@ function App() {
                                   />
                                 </div>
 
-                                <div className="tip-container">
-                                  <div key={`${loadingMode}-${loadingTipIndex}`} className="pro-tip">
-                                    {loadingTipText}
+                                {loadingTipText ? (
+                                  <div className="tip-container">
+                                    <div className="pro-tip">{loadingTipText}</div>
                                   </div>
-                                </div>
+                                ) : null}
 
                                 {hasPreviewAsset ? (
                                   <div className="loading-retain-note">当前保留上一版预览，方便继续对比。</div>
